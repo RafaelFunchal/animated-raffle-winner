@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "telex/animated-raffle-winner",
+  "version": "1.0",
+  "title": "Animated Raffle Winner",
+  "category": "widgets",
+  "icon": "randomize",
+  "description": "Create interactive raffles with number animation and fireworks",
+  "example": {
+    "attributes": {
+      "startingNumber": 1,
+      "endingNumber": 100,
+      "raffleDuration": 5,
+      "fullscreen": false,
+      "animationType": "fireworks"
+    }
+  },
+  "attributes": {
+    "startingNumber": {
+      "type": "number",
+      "default": 1
+    },
+    "endingNumber": {
+      "type": "number",
+      "default": 100
+    },
+    "raffleDuration": {
+      "type": "number",
+      "default": 5
+    },
+    "fullscreen": {
+      "type": "boolean",
+      "default": false
+    },
+    "animationType": {
+      "type": "string",
+      "default": "fireworks"
+    },
+    "backgroundColor": {
+      "type": "string"
+    },
+    "gradient": {
+      "type": "string"
+    },
+    "buttonColor": {
+      "type": "string"
+    },
+    "textColor": {
+      "type": "string"
+    },
+    "buttonTextColor": {
+      "type": "string"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": [
+      "wide",
+      "full"
+    ]
+  },
+  "textdomain": "animated-raffle-winner",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css",
+  "viewScript": "file:./view.js"
+}
