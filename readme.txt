@@ -1,8 +1,9 @@
+
 === Animated Raffle Winner ===
 
 Contributors:      RafaelFunchal
 Tags:              block, raffle, random, lottery, animation
-Tested up to:      6.9
+Tested up to:      6.8
 Stable tag:        1.0
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -75,9 +76,11 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 == Changelog ==
 
 = 1.0 =
-* Added color picker for block background, button background, text, and button text
-* Added more animation types: Balloons, Confetti, and Stars
-* Added an option to set the rolling numbers time 
+* Added background color and gradient selector
+* Raffle with configurable range
+* 5-second animation
+* Celebratory fireworks
+* Responsive interface
 
 = 0.1.0 =
 * Initial release
@@ -89,7 +92,7 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 == Upgrade Notice ==
 
 = 1.0 =
-Major update with color customization support. Upgrade to customize your raffle block backgrounds!
+Major update with background color and gradient customization support. Upgrade to customize your raffle block backgrounds!
 
 = 0.1.0 =
 First version of Animated Raffle Winner. Install to start creating interactive raffles!
