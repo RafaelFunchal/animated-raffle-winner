@@ -56,6 +56,9 @@ class AnimatedRaffleWinner {
 		this.animationFrame = null;
 		this.celebrationActive = false;
 		this.keydownHandler = null;
+		this.celebrationTimeout = null;
+		this.reduceMotion = window.matchMedia &&
+			window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 
 		this.init();
 	}
@@ -144,7 +147,7 @@ class AnimatedRaffleWinner {
 
 		// Create new listener
 		this.keydownHandler = ( e ) => {
-			if ( this.celebrationActive ) {
+			if ( this.celebrationActive && e.key === 'Escape' ) {
 				e.preventDefault();
 				this.stopCelebration();
 				if ( this.fullscreen && this.container.classList.contains( 'fullscreen-active' ) ) {
@@ -164,6 +167,10 @@ class AnimatedRaffleWinner {
 			cancelAnimationFrame( this.animationFrame );
 			this.animationFrame = null;
 		}
+		if ( this.celebrationTimeout ) {
+			clearTimeout( this.celebrationTimeout );
+			this.celebrationTimeout = null;
+		}
 		this.celebrationActive = false;
 		this.particles = [];
 		if ( this.canvas && this.ctx ) {
@@ -177,9 +184,15 @@ class AnimatedRaffleWinner {
 			return;
 		}
 
+		if ( this.reduceMotion ) {
+			this.stopCelebration();
+			return;
+		}
+
 		this.canvas.classList.add( 'active' );
 		this.particles = [];
 		this.celebrationActive = true;
+		this.celebrationTimeout = setTimeout( () => this.stopCelebration(), 8000 );
 
 		const animate = () => {
 			if ( ! this.celebrationActive ) {
