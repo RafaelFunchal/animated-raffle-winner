@@ -3,7 +3,7 @@
 
 Contributors:      RafaelFunchal
 Tags:              block, raffle, random, lottery, animation
-Tested up to:      6.8
+Tested up to:      7.0
 Stable tag:        1.0
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -76,11 +76,12 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 == Changelog ==
 
 = 1.0 =
-* Added background color and gradient selector
-* Raffle with configurable range
-* 5-second animation
-* Celebratory fireworks
-* Responsive interface
+* Added background image selector from Media Library
+* Added background/overlay color opacity control (0-100)
+* Added text size presets (Extra Small, Small, Medium, Large, Extra Large)
+* Updated front-end button label to "Draw again" after each result
+* Added accessibility improvements: live result announcements and reduced-motion support
+* Added fullscreen exit via Escape key and automatic celebration stop
 
 = 0.1.0 =
 * Initial release
