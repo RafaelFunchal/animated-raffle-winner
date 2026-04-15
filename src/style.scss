@@ -233,3 +233,21 @@
 		}
 	}
 }
+
+@media (prefers-reduced-motion: reduce) {
+	.animated-raffle-winner-block {
+		.raffle-container,
+		.raffle-button,
+		.number-result,
+		.celebration-canvas {
+			transition: none;
+		}
+
+		.number-result {
+			&.rolling,
+			&.revealed {
+				animation: none;
+			}
+		}
+	}
+}

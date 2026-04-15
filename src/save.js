@@ -89,11 +89,11 @@ export default function save( { attributes } ) {
 					Raffling between <strong style={ accentStyle }>{ startingNumber }</strong> and{ ' ' }
 					<strong style={ accentStyle }>{ endingNumber }</strong>
 				</p>
-				<button className="raffle-button" style={ buttonStyle }>Draw</button>
-				<div className="raffle-result">
+				<button className="raffle-button" style={ buttonStyle } type="button">Draw</button>
+				<div className="raffle-result" role="status" aria-live="polite" aria-atomic="true">
 					<span className="number-result" style={ accentStyle }></span>
 				</div>
-				<canvas className="celebration-canvas"></canvas>
+				<canvas className="celebration-canvas" aria-hidden="true"></canvas>
 			</div>
 		</div>
 	);
