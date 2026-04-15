@@ -5,6 +5,7 @@
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
 import { useBlockProps, getGradientValueBySlug } from '@wordpress/block-editor';
+import { __ } from '@wordpress/i18n';
 
 /**
  * The save function defines the way in which the different attributes should
@@ -86,10 +87,13 @@ export default function save( { attributes } ) {
 				data-animation-type={ animationType }
 			>
 				<p className="raffle-message" style={ textStyle }>
-					Raffling between <strong style={ accentStyle }>{ startingNumber }</strong> and{ ' ' }
+					{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+					<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
 					<strong style={ accentStyle }>{ endingNumber }</strong>
 				</p>
-				<button className="raffle-button" style={ buttonStyle } type="button">Draw</button>
+				<button className="raffle-button" style={ buttonStyle } type="button">
+					{ __( 'Draw', 'animated-raffle-winner' ) }
+				</button>
 				<div className="raffle-result" role="status" aria-live="polite" aria-atomic="true">
 					<span className="number-result" style={ accentStyle }></span>
 				</div>
