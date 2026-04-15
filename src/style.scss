@@ -35,6 +35,46 @@
 		}
 	}
 
+	.raffle-container.text-size-very-small {
+		.raffle-message { font-size: 1.1rem; }
+		.raffle-message strong { font-size: 1.3rem; }
+		.raffle-button { font-size: 1.1rem; }
+		.number-result, .number-preview { font-size: 3.5rem; }
+		.number-result.rolling { font-size: 2.8rem; }
+	}
+
+	.raffle-container.text-size-small {
+		.raffle-message { font-size: 1.3rem; }
+		.raffle-message strong { font-size: 1.6rem; }
+		.raffle-button { font-size: 1.3rem; }
+		.number-result, .number-preview { font-size: 4.8rem; }
+		.number-result.rolling { font-size: 3.8rem; }
+	}
+
+	.raffle-container.text-size-medium {
+		.raffle-message { font-size: 1.5rem; }
+		.raffle-message strong { font-size: 1.8rem; }
+		.raffle-button { font-size: 1.5rem; }
+		.number-result, .number-preview { font-size: 6rem; }
+		.number-result.rolling { font-size: 4rem; }
+	}
+
+	.raffle-container.text-size-large {
+		.raffle-message { font-size: 1.7rem; }
+		.raffle-message strong { font-size: 2.1rem; }
+		.raffle-button { font-size: 1.7rem; }
+		.number-result, .number-preview { font-size: 6.8rem; }
+		.number-result.rolling { font-size: 5.2rem; }
+	}
+
+	.raffle-container.text-size-super-large {
+		.raffle-message { font-size: 1.9rem; }
+		.raffle-message strong { font-size: 2.3rem; }
+		.raffle-button { font-size: 1.9rem; }
+		.number-result, .number-preview { font-size: 7.6rem; }
+		.number-result.rolling { font-size: 5.8rem; }
+	}
+
 	.raffle-message {
 		color: #fff;
 		font-size: 1.5rem;
@@ -214,6 +254,7 @@
 				font-size: 3rem;
 			}
 		}
+
 
 		.number-preview {
 			font-size: 4rem;

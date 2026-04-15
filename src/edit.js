@@ -11,12 +11,12 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps, InspectorControls, PanelColorSettings, getGradientValueBySlug } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls, PanelColorSettings, MediaUpload, MediaUploadCheck, getGradientValueBySlug } from '@wordpress/block-editor';
 
 /**
  * WordPress components
  */
-import { PanelBody, TextControl, RangeControl, ToggleControl, SelectControl } from '@wordpress/components';
+import { PanelBody, TextControl, RangeControl, ToggleControl, SelectControl, Button, ButtonGroup } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -35,7 +35,53 @@ import './editor.scss';
  * @return {Element} Element to render.
  */
 export default function Edit( { attributes, setAttributes } ) {
-	const { startingNumber, endingNumber, raffleDuration, fullscreen, animationType, backgroundColor, gradient, buttonColor, textColor, buttonTextColor } = attributes;
+	const {
+		startingNumber,
+		endingNumber,
+		raffleDuration,
+		fullscreen,
+		animationType,
+		textSize,
+		backgroundColor,
+		overlayOpacity,
+		gradient,
+		buttonColor,
+		textColor,
+		buttonTextColor,
+		backgroundImageUrl,
+		backgroundImageId,
+	} = attributes;
+
+	const applyColorOpacity = ( colorValue, opacityValue ) => {
+		const opacity = Math.max( 0, Math.min( 100, opacityValue ?? 100 ) ) / 100;
+		const color = colorValue?.trim();
+
+		if ( ! color ) {
+			return colorValue;
+		}
+
+		const hexMatch = color.match( /^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/ );
+		if ( hexMatch ) {
+			const hex = hexMatch[ 1 ];
+			const normalizedHex =
+				hex.length === 3
+					? hex.split( '' ).map( ( char ) => char + char ).join( '' )
+					: hex;
+			const red = parseInt( normalizedHex.slice( 0, 2 ), 16 );
+			const green = parseInt( normalizedHex.slice( 2, 4 ), 16 );
+			const blue = parseInt( normalizedHex.slice( 4, 6 ), 16 );
+			return `rgba(${ red }, ${ green }, ${ blue }, ${ opacity })`;
+		}
+
+		const rgbMatch = color.match(
+			/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*[0-9.]+\s*)?\)$/i
+		);
+		if ( rgbMatch ) {
+			return `rgba(${ rgbMatch[ 1 ] }, ${ rgbMatch[ 2 ] }, ${ rgbMatch[ 3 ] }, ${ opacity })`;
+		}
+
+		return colorValue;
+	};
 
 	// Get background style - resolve gradient slug if needed
 	// Sanitize CSS values to prevent injection
@@ -52,8 +98,23 @@ export default function Edit( { attributes, setAttributes } ) {
 	} else if ( backgroundColor ) {
 		// Sanitize color value - block script injection attempts
 		if ( backgroundColor && ! /<script|javascript:|on\w+\s*=/i.test( backgroundColor ) ) {
-			backgroundStyle.background = backgroundColor;
+			backgroundStyle.background = applyColorOpacity( backgroundColor, overlayOpacity );
 		}
+	}
+	if ( backgroundImageUrl && ! /<script|javascript:/i.test( backgroundImageUrl ) ) {
+		if ( gradient && backgroundStyle.background ) {
+			backgroundStyle.backgroundImage = `${ backgroundStyle.background }, url("${ backgroundImageUrl }")`;
+			delete backgroundStyle.background;
+		} else if ( backgroundColor && backgroundStyle.background ) {
+			const overlayColor = backgroundStyle.background;
+			delete backgroundStyle.background;
+			backgroundStyle.backgroundImage = `linear-gradient(${ overlayColor }, ${ overlayColor }), url("${ backgroundImageUrl }")`;
+		} else {
+			backgroundStyle.backgroundImage = `url("${ backgroundImageUrl }")`;
+		}
+		backgroundStyle.backgroundSize = 'cover';
+		backgroundStyle.backgroundPosition = 'center';
+		backgroundStyle.backgroundRepeat = 'no-repeat';
 	}
 
 	// Get button color style - sanitize CSS values to prevent injection
@@ -99,6 +160,13 @@ export default function Edit( { attributes, setAttributes } ) {
 		{ label: __( 'Stars', 'animated-raffle-winner' ), value: 'stars' },
 		{ label: __( 'Balloons', 'animated-raffle-winner' ), value: 'balloons' },
 	];
+	const textSizeOptions = [
+		{ label: __( 'Extra Small', 'animated-raffle-winner' ), value: 'very-small' },
+		{ label: __( 'Small', 'animated-raffle-winner' ), value: 'small' },
+		{ label: __( 'Medium', 'animated-raffle-winner' ), value: 'medium' },
+		{ label: __( 'Large', 'animated-raffle-winner' ), value: 'large' },
+		{ label: __( 'Extra Large', 'animated-raffle-winner' ), value: 'super-large' },
+	];
 
 	return (
 		<>
@@ -141,15 +209,63 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody title={ __( 'Display Settings', 'animated-raffle-winner' ) } initialOpen={ false }>
+					<MediaUploadCheck>
+						<MediaUpload
+							onSelect={ ( media ) =>
+								setAttributes( {
+									backgroundImageUrl: media?.url || undefined,
+									backgroundImageId: media?.id || undefined,
+								} )
+							}
+							allowedTypes={ [ 'image' ] }
+							value={ backgroundImageId }
+							render={ ( { open } ) => (
+								<Button variant="secondary" onClick={ open }>
+									{ backgroundImageUrl
+										? __( 'Replace Background Image', 'animated-raffle-winner' )
+										: __( 'Select Background Image', 'animated-raffle-winner' ) }
+								</Button>
+							) }
+						/>
+					</MediaUploadCheck>
+					{ backgroundImageUrl && (
+						<>
+							<p>{ __( 'Background image selected.', 'animated-raffle-winner' ) }</p>
+							<img
+								src={ backgroundImageUrl }
+								alt={ __( 'Selected background preview', 'animated-raffle-winner' ) }
+								style={ {
+									display: 'block',
+									width: '100%',
+									height: 'auto',
+									maxHeight: '120px',
+									objectFit: 'cover',
+									borderRadius: '6px',
+									marginBottom: '10px',
+								} }
+							/>
+							<Button
+								variant="tertiary"
+								onClick={ () =>
+									setAttributes( {
+										backgroundImageUrl: undefined,
+										backgroundImageId: undefined,
+									} )
+								}
+							>
+								{ __( 'Remove Background Image', 'animated-raffle-winner' ) }
+							</Button>
+						</>
+					) }
 					<PanelColorSettings
-						title={ __( 'Background Color', 'animated-raffle-winner' ) }
+						title={ __( 'Background/Overlay Color', 'animated-raffle-winner' ) }
 						colorSettings={ [
 							{
 								value: backgroundColor,
 								onChange: ( value ) => {
 									setAttributes( { backgroundColor: value, gradient: undefined } );
 								},
-								label: __( 'Background Color', 'animated-raffle-winner' ),
+								label: __( 'Background/Overlay Color', 'animated-raffle-winner' ),
 							},
 						] }
 						gradientSettings={ [
@@ -161,6 +277,16 @@ export default function Edit( { attributes, setAttributes } ) {
 								label: __( 'Background Gradient', 'animated-raffle-winner' ),
 							},
 						] }
+					/>
+					<RangeControl
+						label={ __( 'Background/Overlay Opacity', 'animated-raffle-winner' ) }
+						value={ overlayOpacity ?? 100 }
+						onChange={ ( value ) =>
+							setAttributes( { overlayOpacity: value ?? 100 } )
+						}
+						min={ 0 }
+						max={ 100 }
+						step={ 1 }
 					/>
 					<PanelColorSettings
 						title={ __( 'Button Background Color', 'animated-raffle-winner' ) }
@@ -198,6 +324,19 @@ export default function Edit( { attributes, setAttributes } ) {
 							},
 						] }
 					/>
+					<p>{ __( 'Text Size', 'animated-raffle-winner' ) }</p>
+					<ButtonGroup>
+						{ textSizeOptions.map( ( option ) => (
+							<Button
+								key={ option.value }
+								variant={ textSize === option.value ? 'primary' : 'secondary' }
+								onClick={ () => setAttributes( { textSize: option.value } ) }
+							>
+								{ option.label }
+							</Button>
+						) ) }
+					</ButtonGroup>
+					<hr style={ { margin: '16px 0', borderColor: '#ddd' } } />
 					<ToggleControl
 						label={ __( 'Open in Fullscreen', 'animated-raffle-winner' ) }
 						checked={ fullscreen }
@@ -219,7 +358,7 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="raffle-container" style={ backgroundStyle }>
+				<div className={ `raffle-container text-size-${ textSize || 'medium' }` } style={ backgroundStyle }>
 					<p className="raffle-message" style={ textStyle }>
 						{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
 						<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }

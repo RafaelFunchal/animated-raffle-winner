@@ -17,7 +17,52 @@ import { __ } from '@wordpress/i18n';
  * @return {Element} Element to render.
  */
 export default function save( { attributes } ) {
-	const { startingNumber, endingNumber, raffleDuration, fullscreen, animationType, backgroundColor, gradient, buttonColor, textColor, buttonTextColor } = attributes;
+	const {
+		startingNumber,
+		endingNumber,
+		raffleDuration,
+		fullscreen,
+		animationType,
+		textSize,
+		backgroundColor,
+		overlayOpacity,
+		gradient,
+		buttonColor,
+		textColor,
+		buttonTextColor,
+		backgroundImageUrl,
+	} = attributes;
+
+	const applyColorOpacity = ( colorValue, opacityValue ) => {
+		const opacity = Math.max( 0, Math.min( 100, opacityValue ?? 100 ) ) / 100;
+		const color = colorValue?.trim();
+
+		if ( ! color ) {
+			return colorValue;
+		}
+
+		const hexMatch = color.match( /^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/ );
+		if ( hexMatch ) {
+			const hex = hexMatch[ 1 ];
+			const normalizedHex =
+				hex.length === 3
+					? hex.split( '' ).map( ( char ) => char + char ).join( '' )
+					: hex;
+			const red = parseInt( normalizedHex.slice( 0, 2 ), 16 );
+			const green = parseInt( normalizedHex.slice( 2, 4 ), 16 );
+			const blue = parseInt( normalizedHex.slice( 4, 6 ), 16 );
+			return `rgba(${ red }, ${ green }, ${ blue }, ${ opacity })`;
+		}
+
+		const rgbMatch = color.match(
+			/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*[0-9.]+\s*)?\)$/i
+		);
+		if ( rgbMatch ) {
+			return `rgba(${ rgbMatch[ 1 ] }, ${ rgbMatch[ 2 ] }, ${ rgbMatch[ 3 ] }, ${ opacity })`;
+		}
+
+		return colorValue;
+	};
 
 	// Get background style - resolve gradient slug if needed
 	// Sanitize CSS values to prevent injection
@@ -34,8 +79,23 @@ export default function save( { attributes } ) {
 	} else if ( backgroundColor ) {
 		// Sanitize color value - block script injection attempts
 		if ( backgroundColor && ! /<script|javascript:|on\w+\s*=/i.test( backgroundColor ) ) {
-			backgroundStyle.background = backgroundColor;
+			backgroundStyle.background = applyColorOpacity( backgroundColor, overlayOpacity );
 		}
+	}
+	if ( backgroundImageUrl && ! /<script|javascript:/i.test( backgroundImageUrl ) ) {
+		if ( gradient && backgroundStyle.background ) {
+			backgroundStyle.backgroundImage = `${ backgroundStyle.background }, url("${ backgroundImageUrl }")`;
+			delete backgroundStyle.background;
+		} else if ( backgroundColor && backgroundStyle.background ) {
+			const overlayColor = backgroundStyle.background;
+			delete backgroundStyle.background;
+			backgroundStyle.backgroundImage = `linear-gradient(${ overlayColor }, ${ overlayColor }), url("${ backgroundImageUrl }")`;
+		} else {
+			backgroundStyle.backgroundImage = `url("${ backgroundImageUrl }")`;
+		}
+		backgroundStyle.backgroundSize = 'cover';
+		backgroundStyle.backgroundPosition = 'center';
+		backgroundStyle.backgroundRepeat = 'no-repeat';
 	}
 
 	// Get button color style - sanitize CSS values to prevent injection
@@ -78,7 +138,7 @@ export default function save( { attributes } ) {
 	return (
 		<div { ...blockProps }>
 			<div
-				className="raffle-container"
+				className={ `raffle-container text-size-${ textSize || 'medium' }` }
 				style={ backgroundStyle }
 				data-starting-number={ startingNumber }
 				data-ending-number={ endingNumber }
@@ -91,7 +151,13 @@ export default function save( { attributes } ) {
 					<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
 					<strong style={ accentStyle }>{ endingNumber }</strong>
 				</p>
-				<button className="raffle-button" style={ buttonStyle } type="button">
+				<button
+					className="raffle-button"
+					style={ buttonStyle }
+					type="button"
+					data-draw-label={ __( 'Draw', 'animated-raffle-winner' ) }
+					data-draw-again-label={ __( 'Draw again', 'animated-raffle-winner' ) }
+				>
 					{ __( 'Draw', 'animated-raffle-winner' ) }
 				</button>
 				<div className="raffle-result" role="status" aria-live="polite" aria-atomic="true">

@@ -37,8 +37,16 @@
       "type": "string",
       "default": "fireworks"
     },
+    "textSize": {
+      "type": "string",
+      "default": "medium"
+    },
     "backgroundColor": {
       "type": "string"
+    },
+    "overlayOpacity": {
+      "type": "number",
+      "default": 100
     },
     "gradient": {
       "type": "string"
@@ -51,6 +59,12 @@
     },
     "buttonTextColor": {
       "type": "string"
+    },
+    "backgroundImageUrl": {
+      "type": "string"
+    },
+    "backgroundImageId": {
+      "type": "number"
     }
   },
   "supports": {

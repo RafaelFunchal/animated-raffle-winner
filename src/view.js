@@ -10,6 +10,8 @@ class AnimatedRaffleWinner {
 		this.numberElement = container.querySelector( '.number-result' );
 		this.canvas = container.querySelector( '.celebration-canvas' );
 		this.ctx = this.canvas ? this.canvas.getContext( '2d' ) : null;
+		this.drawLabel = this.button?.getAttribute( 'data-draw-label' ) || 'Draw';
+		this.drawAgainLabel = this.button?.getAttribute( 'data-draw-again-label' ) || 'Draw again';
 
 		// Validated allowed animation types
 		const allowedAnimationTypes = ['fireworks', 'confetti', 'stars', 'balloons'];
@@ -133,6 +135,7 @@ class AnimatedRaffleWinner {
 		if ( this.button ) {
 			this.button.disabled = false;
 			this.button.classList.remove( 'drawing' );
+			this.button.textContent = this.drawAgainLabel;
 		}
 
 		this.startCelebration();
