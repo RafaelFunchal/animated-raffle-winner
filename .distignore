@@ -1,0 +1,10 @@
+.DS_Store
+.git
+.gitignore
+node_modules
+src
+package.json
+package-lock.json
+SECURITY_REVIEW.md
+artefact.xml
+*.zip
