@@ -4,7 +4,7 @@
     <content><![CDATA[
 === Animated Raffle Winner ===
 
-Contributors:      WordPress Telex, RafaelFunchal
+Contributors:      RafaelFunchal
 Tags:              block, raffle, random, lottery, animation
 Tested up to:      6.8
 Stable tag:        0.1.0
@@ -100,7 +100,7 @@ First version of Animated Raffle Winner. Install to start creating interactive r
  * Version:           0.1.0
  * Requires at least: 6.1
  * Requires PHP:      7.0
- * Author:            RafaelFunchal, WordPress Telex
+ * Author:            RafaelFunchal
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       animated-raffle-winner
@@ -130,7 +130,7 @@ add_action( 'init', 'animated_raffle_winner_block_init' );
     <content><![CDATA[{
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
-	"name": "telex/animated-raffle-winner",
+	"name": "rafaelfunchal/animated-raffle-winner",
 	"version": "0.1.0",
 	"title": "Animated Raffle Winner",
 	"category": "widgets",

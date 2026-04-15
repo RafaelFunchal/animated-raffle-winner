@@ -2,7 +2,7 @@
     "name": "animated-raffle-winner",
     "version": "1.0.0",
     "description": "Create interactive raffles with number animation and fireworks",
-    "author": "telex block authoring tool",
+    "author": "RafaelFunchal",
     "license": "GPL-2.0-or-later",
     "main": "build/index.js",
     "scripts": {
