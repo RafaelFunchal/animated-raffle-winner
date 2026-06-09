@@ -5,6 +5,12 @@
     "author": "RafaelFunchal",
     "license": "GPL-2.0-or-later",
     "main": "build/index.js",
+    "files": [
+        "animated-raffle-winner.php",
+        "readme.txt",
+        "build",
+        "src"
+    ],
     "scripts": {
         "build": "wp-scripts build --webpack-copy-php",
         "format": "wp-scripts format",

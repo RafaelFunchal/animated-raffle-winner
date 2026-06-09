@@ -97,3 +97,12 @@ Major update with background color and gradient customization support. Upgrade t
 
 = 0.1.0 =
 First version of Animated Raffle Winner. Install to start creating interactive raffles!
+
+== Source Code & Build Instructions ==
+
+The source code for this plugin is included directly within the `src/` directory.
+
+To build the plugin from source:
+1. Ensure you have Node.js and npm installed.
+2. Install the dependencies: `npm install`
+3. Build the assets: `npm run build`
