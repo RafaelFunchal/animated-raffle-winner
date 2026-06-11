@@ -100,7 +100,10 @@ First version of Animated Raffle Winner. Install to start creating interactive r
 
 == Source Code & Build Instructions ==
 
-The source code for this plugin is included directly within the `src/` directory.
+The development source code and build tools for this plugin are publicly maintained on GitHub:
+https://github.com/RafaelFunchal/animated-raffle-winner
+
+The source code is also included directly within the `src/` directory in this distribution package.
 
 To build the plugin from source:
 1. Ensure you have Node.js and npm installed.
