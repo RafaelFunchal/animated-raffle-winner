@@ -6,8 +6,8 @@
 
 Contributors:      RafaelFunchal
 Tags:              block, raffle, random, lottery, animation
-Tested up to:      6.8
-Stable tag:        0.1.0
+Tested up to:      7.1
+Stable tag:        1.0
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -78,6 +78,14 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 
 == Changelog ==
 
+= 1.0 =
+* Added background image selector from Media Library
+* Added background/overlay color opacity control (0-100)
+* Added text size presets (Extra Small, Small, Medium, Large, Extra Large)
+* Updated front-end button label to "Draw again" after each result
+* Added accessibility improvements: live result announcements and reduced-motion support
+* Added fullscreen exit via Escape key and automatic celebration stop
+
 = 0.1.0 =
 * Initial release
 * Raffle with configurable range
@@ -87,8 +95,23 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 
 == Upgrade Notice ==
 
+= 1.0 =
+Major update with background color and gradient customization support. Upgrade to customize your raffle block backgrounds!
+
 = 0.1.0 =
 First version of Animated Raffle Winner. Install to start creating interactive raffles!
+
+== Source Code & Build Instructions ==
+
+The development source code and build tools for this plugin are publicly maintained on GitHub:
+https://github.com/RafaelFunchal/animated-raffle-winner
+
+The source code is also included directly within the `src/` directory in this distribution package.
+
+To build the plugin from source:
+1. Ensure you have Node.js and npm installed.
+2. Install the dependencies: `npm install`
+3. Build the assets: `npm run build`
 ]]></content>
   </file>
   <file path="animated-raffle-winner.php">
@@ -97,13 +120,14 @@ First version of Animated Raffle Winner. Install to start creating interactive r
 /**
  * Plugin Name:       Animated Raffle Winner
  * Description:       An interactive block to create animated raffles with random numbers and celebratory fireworks.
- * Version:           0.1.0
+ * Version:           1.0
  * Requires at least: 6.1
  * Requires PHP:      7.0
  * Author:            RafaelFunchal
  * License:           GPLv2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       animated-raffle-winner
+ * Source Code:       https://github.com/RafaelFunchal/animated-raffle-winner
  *
  * @package AnimatedRaffleWinner
  */
@@ -123,6 +147,7 @@ function animated_raffle_winner_block_init() {
 	register_block_type( __DIR__ . '/build/' );
 }
 add_action( 'init', 'animated_raffle_winner_block_init' );
+
 ]]></content>
   </file>
   <file path="src/block.json">
@@ -131,7 +156,7 @@ add_action( 'init', 'animated_raffle_winner_block_init' );
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "rafaelfunchal/animated-raffle-winner",
-	"version": "0.1.0",
+	"version": "1.0",
 	"title": "Animated Raffle Winner",
 	"category": "widgets",
 	"icon": "randomize",
@@ -165,6 +190,35 @@ add_action( 'init', 'animated_raffle_winner_block_init' );
 		"animationType": {
 			"type": "string",
 			"default": "fireworks"
+		},
+		"textSize": {
+			"type": "string",
+			"default": "medium"
+		},
+		"backgroundColor": {
+			"type": "string"
+		},
+		"overlayOpacity": {
+			"type": "number",
+			"default": 100
+		},
+		"gradient": {
+			"type": "string"
+		},
+		"buttonColor": {
+			"type": "string"
+		},
+		"textColor": {
+			"type": "string"
+		},
+		"buttonTextColor": {
+			"type": "string"
+		},
+		"backgroundImageUrl": {
+			"type": "string"
+		},
+		"backgroundImageId": {
+			"type": "number"
 		}
 	},
 	"supports": {
@@ -237,12 +291,12 @@ import { __ } from '@wordpress/i18n';
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
+import { useBlockProps, InspectorControls, PanelColorSettings, MediaUpload, MediaUploadCheck, getGradientValueBySlug } from '@wordpress/block-editor';
 
 /**
  * WordPress components
  */
-import { PanelBody, TextControl, RangeControl, ToggleControl, SelectControl } from '@wordpress/components';
+import { PanelBody, TextControl, RangeControl, ToggleControl, SelectControl, Button, ButtonGroup } from '@wordpress/components';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -261,7 +315,120 @@ import './editor.scss';
  * @return {Element} Element to render.
  */
 export default function Edit( { attributes, setAttributes } ) {
-	const { startingNumber, endingNumber, raffleDuration, fullscreen, animationType } = attributes;
+	const {
+		startingNumber,
+		endingNumber,
+		raffleDuration,
+		fullscreen,
+		animationType,
+		textSize,
+		backgroundColor,
+		overlayOpacity,
+		gradient,
+		buttonColor,
+		textColor,
+		buttonTextColor,
+		backgroundImageUrl,
+		backgroundImageId,
+	} = attributes;
+
+	const applyColorOpacity = ( colorValue, opacityValue ) => {
+		const opacity = Math.max( 0, Math.min( 100, opacityValue ?? 100 ) ) / 100;
+		const color = colorValue?.trim();
+
+		if ( ! color ) {
+			return colorValue;
+		}
+
+		const hexMatch = color.match( /^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/ );
+		if ( hexMatch ) {
+			const hex = hexMatch[ 1 ];
+			const normalizedHex =
+				hex.length === 3
+					? hex.split( '' ).map( ( char ) => char + char ).join( '' )
+					: hex;
+			const red = parseInt( normalizedHex.slice( 0, 2 ), 16 );
+			const green = parseInt( normalizedHex.slice( 2, 4 ), 16 );
+			const blue = parseInt( normalizedHex.slice( 4, 6 ), 16 );
+			return `rgba(${ red }, ${ green }, ${ blue }, ${ opacity })`;
+		}
+
+		const rgbMatch = color.match(
+			/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*[0-9.]+\s*)?\)$/i
+		);
+		if ( rgbMatch ) {
+			return `rgba(${ rgbMatch[ 1 ] }, ${ rgbMatch[ 2 ] }, ${ rgbMatch[ 3 ] }, ${ opacity })`;
+		}
+
+		return colorValue;
+	};
+
+	// Get background style - resolve gradient slug if needed
+	// Sanitize CSS values to prevent injection
+	// Supports custom multi-color gradients
+	const backgroundStyle = {};
+	if ( gradient ) {
+		// Try to resolve gradient slug, fallback to direct value (supports custom gradients)
+		const gradientValue = getGradientValueBySlug( gradient ) || gradient;
+		// Sanitize gradient - block script injection attempts but allow CSS gradient syntax
+		// Allows linear-gradient, radial-gradient, conic-gradient with multiple color stops
+		if ( gradientValue && ! /<script|javascript:|on\w+\s*=/i.test( gradientValue ) ) {
+			backgroundStyle.background = gradientValue;
+		}
+	} else if ( backgroundColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( backgroundColor && ! /<script|javascript:|on\w+\s*=/i.test( backgroundColor ) ) {
+			backgroundStyle.background = applyColorOpacity( backgroundColor, overlayOpacity );
+		}
+	}
+	if ( backgroundImageUrl && ! /<script|javascript:/i.test( backgroundImageUrl ) ) {
+		if ( gradient && backgroundStyle.background ) {
+			backgroundStyle.backgroundImage = `${ backgroundStyle.background }, url("${ backgroundImageUrl }")`;
+			delete backgroundStyle.background;
+		} else if ( backgroundColor && backgroundStyle.background ) {
+			const overlayColor = backgroundStyle.background;
+			delete backgroundStyle.background;
+			backgroundStyle.backgroundImage = `linear-gradient(${ overlayColor }, ${ overlayColor }), url("${ backgroundImageUrl }")`;
+		} else {
+			backgroundStyle.backgroundImage = `url("${ backgroundImageUrl }")`;
+		}
+		backgroundStyle.backgroundSize = 'cover';
+		backgroundStyle.backgroundPosition = 'center';
+		backgroundStyle.backgroundRepeat = 'no-repeat';
+	}
+
+	// Get button color style - sanitize CSS values to prevent injection
+	const buttonStyle = {};
+	if ( buttonColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( buttonColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonColor ) ) {
+			buttonStyle.backgroundColor = buttonColor;
+		}
+	}
+	if ( buttonTextColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( buttonTextColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonTextColor ) ) {
+			buttonStyle.color = buttonTextColor;
+		}
+	}
+
+	// Get text color style - sanitize CSS values to prevent injection
+	const textStyle = {};
+	if ( textColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( textColor && ! /<script|javascript:|on\w+\s*=/i.test( textColor ) ) {
+			textStyle.color = textColor;
+		}
+	}
+
+	// Get accent color style for strong elements and raffle-result (uses button background color)
+	const accentStyle = {};
+	if ( buttonColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( buttonColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonColor ) ) {
+			accentStyle.color = buttonColor;
+		}
+	}
 
 	const blockProps = useBlockProps( {
 		className: 'animated-raffle-winner-block',
@@ -273,6 +440,13 @@ export default function Edit( { attributes, setAttributes } ) {
 		{ label: __( 'Stars', 'animated-raffle-winner' ), value: 'stars' },
 		{ label: __( 'Balloons', 'animated-raffle-winner' ), value: 'balloons' },
 	];
+	const textSizeOptions = [
+		{ label: __( 'Extra Small', 'animated-raffle-winner' ), value: 'very-small' },
+		{ label: __( 'Small', 'animated-raffle-winner' ), value: 'small' },
+		{ label: __( 'Medium', 'animated-raffle-winner' ), value: 'medium' },
+		{ label: __( 'Large', 'animated-raffle-winner' ), value: 'large' },
+		{ label: __( 'Extra Large', 'animated-raffle-winner' ), value: 'super-large' },
+	];
 
 	return (
 		<>
@@ -282,19 +456,25 @@ export default function Edit( { attributes, setAttributes } ) {
 						label={ __( 'Starting Number', 'animated-raffle-winner' ) }
 						type="number"
 						value={ startingNumber }
-						onChange={ ( value ) =>
-							setAttributes( { startingNumber: parseInt( value ) || 1 } )
-						}
-						help={ __( 'The lowest number in the range', 'animated-raffle-winner' ) }
+						onChange={ ( value ) => {
+							const num = parseInt( value, 10 );
+							if ( ! isNaN( num ) && num >= -999999 && num <= 999999 ) {
+								setAttributes( { startingNumber: num } );
+							}
+						} }
+						help={ __( 'The lowest number in the range (-999999 to 999999)', 'animated-raffle-winner' ) }
 					/>
 					<TextControl
 						label={ __( 'Ending Number', 'animated-raffle-winner' ) }
 						type="number"
 						value={ endingNumber }
-						onChange={ ( value ) =>
-							setAttributes( { endingNumber: parseInt( value ) || 100 } )
-						}
-						help={ __( 'The highest number in the range', 'animated-raffle-winner' ) }
+						onChange={ ( value ) => {
+							const num = parseInt( value, 10 );
+							if ( ! isNaN( num ) && num >= -999999 && num <= 999999 ) {
+								setAttributes( { endingNumber: num } );
+							}
+						} }
+						help={ __( 'The highest number in the range (-999999 to 999999)', 'animated-raffle-winner' ) }
 					/>
 					<RangeControl
 						label={ __( 'Raffle Duration (seconds)', 'animated-raffle-winner' ) }
@@ -309,6 +489,134 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody title={ __( 'Display Settings', 'animated-raffle-winner' ) } initialOpen={ false }>
+					<MediaUploadCheck>
+						<MediaUpload
+							onSelect={ ( media ) =>
+								setAttributes( {
+									backgroundImageUrl: media?.url || undefined,
+									backgroundImageId: media?.id || undefined,
+								} )
+							}
+							allowedTypes={ [ 'image' ] }
+							value={ backgroundImageId }
+							render={ ( { open } ) => (
+								<Button variant="secondary" onClick={ open }>
+									{ backgroundImageUrl
+										? __( 'Replace Background Image', 'animated-raffle-winner' )
+										: __( 'Select Background Image', 'animated-raffle-winner' ) }
+								</Button>
+							) }
+						/>
+					</MediaUploadCheck>
+					{ backgroundImageUrl && (
+						<>
+							<p>{ __( 'Background image selected.', 'animated-raffle-winner' ) }</p>
+							<img
+								src={ backgroundImageUrl }
+								alt={ __( 'Selected background preview', 'animated-raffle-winner' ) }
+								style={ {
+									display: 'block',
+									width: '100%',
+									height: 'auto',
+									maxHeight: '120px',
+									objectFit: 'cover',
+									borderRadius: '6px',
+									marginBottom: '10px',
+								} }
+							/>
+							<Button
+								variant="tertiary"
+								onClick={ () =>
+									setAttributes( {
+										backgroundImageUrl: undefined,
+										backgroundImageId: undefined,
+									} )
+								}
+							>
+								{ __( 'Remove Background Image', 'animated-raffle-winner' ) }
+							</Button>
+						</>
+					) }
+					<PanelColorSettings
+						title={ __( 'Background/Overlay Color', 'animated-raffle-winner' ) }
+						colorSettings={ [
+							{
+								value: backgroundColor,
+								onChange: ( value ) => {
+									setAttributes( { backgroundColor: value, gradient: undefined } );
+								},
+								label: __( 'Background/Overlay Color', 'animated-raffle-winner' ),
+							},
+						] }
+						gradientSettings={ [
+							{
+								value: gradient,
+								onChange: ( value ) => {
+									setAttributes( { gradient: value, backgroundColor: undefined } );
+								},
+								label: __( 'Background Gradient', 'animated-raffle-winner' ),
+							},
+						] }
+					/>
+					<RangeControl
+						label={ __( 'Background/Overlay Opacity', 'animated-raffle-winner' ) }
+						value={ overlayOpacity ?? 100 }
+						onChange={ ( value ) =>
+							setAttributes( { overlayOpacity: value ?? 100 } )
+						}
+						min={ 0 }
+						max={ 100 }
+						step={ 1 }
+					/>
+					<PanelColorSettings
+						title={ __( 'Button Background Color', 'animated-raffle-winner' ) }
+						colorSettings={ [
+							{
+								value: buttonColor,
+								onChange: ( value ) => {
+									setAttributes( { buttonColor: value } );
+								},
+								label: __( 'Button Background Color', 'animated-raffle-winner' ),
+							},
+						] }
+					/>
+					<PanelColorSettings
+						title={ __( 'Button Text Color', 'animated-raffle-winner' ) }
+						colorSettings={ [
+							{
+								value: buttonTextColor,
+								onChange: ( value ) => {
+									setAttributes( { buttonTextColor: value } );
+								},
+								label: __( 'Button Text Color', 'animated-raffle-winner' ),
+							},
+						] }
+					/>
+					<PanelColorSettings
+						title={ __( 'Text Color', 'animated-raffle-winner' ) }
+						colorSettings={ [
+							{
+								value: textColor,
+								onChange: ( value ) => {
+									setAttributes( { textColor: value } );
+								},
+								label: __( 'Text Color', 'animated-raffle-winner' ),
+							},
+						] }
+					/>
+					<p>{ __( 'Text Size', 'animated-raffle-winner' ) }</p>
+					<ButtonGroup>
+						{ textSizeOptions.map( ( option ) => (
+							<Button
+								key={ option.value }
+								variant={ textSize === option.value ? 'primary' : 'secondary' }
+								onClick={ () => setAttributes( { textSize: option.value } ) }
+							>
+								{ option.label }
+							</Button>
+						) ) }
+					</ButtonGroup>
+					<hr style={ { margin: '16px 0', borderColor: '#ddd' } } />
 					<ToggleControl
 						label={ __( 'Open in Fullscreen', 'animated-raffle-winner' ) }
 						checked={ fullscreen }
@@ -330,17 +638,17 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className="raffle-container">
-					<p className="raffle-message">
+				<div className={ `raffle-container text-size-${ textSize || 'medium' }` } style={ backgroundStyle }>
+					<p className="raffle-message" style={ textStyle }>
 						{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
-						<strong>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
-						<strong>{ endingNumber }</strong>
+						<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+						<strong style={ accentStyle }>{ endingNumber }</strong>
 					</p>
-					<button className="raffle-button" disabled>
+					<button className="raffle-button" style={ buttonStyle } disabled>
 						{ __( 'Draw', 'animated-raffle-winner' ) }
 					</button>
 					<div className="raffle-preview">
-						<span className="number-preview">?</span>
+						<span className="number-preview" style={ accentStyle }>?</span>
 					</div>
 					<div className="raffle-config-info">
 						<p className="raffle-info">
@@ -368,7 +676,8 @@ export default function Edit( { attributes, setAttributes } ) {
  *
  * @see https://developer.wordpress.org/block-editor/reference-guides/packages/packages-block-editor/#useblockprops
  */
-import { useBlockProps } from '@wordpress/block-editor';
+import { useBlockProps, getGradientValueBySlug } from '@wordpress/block-editor';
+import { __ } from '@wordpress/i18n';
 
 /**
  * The save function defines the way in which the different attributes should
@@ -380,7 +689,119 @@ import { useBlockProps } from '@wordpress/block-editor';
  * @return {Element} Element to render.
  */
 export default function save( { attributes } ) {
-	const { startingNumber, endingNumber, raffleDuration, fullscreen, animationType } = attributes;
+	const {
+		startingNumber,
+		endingNumber,
+		raffleDuration,
+		fullscreen,
+		animationType,
+		textSize,
+		backgroundColor,
+		overlayOpacity,
+		gradient,
+		buttonColor,
+		textColor,
+		buttonTextColor,
+		backgroundImageUrl,
+	} = attributes;
+
+	const applyColorOpacity = ( colorValue, opacityValue ) => {
+		const opacity = Math.max( 0, Math.min( 100, opacityValue ?? 100 ) ) / 100;
+		const color = colorValue?.trim();
+
+		if ( ! color ) {
+			return colorValue;
+		}
+
+		const hexMatch = color.match( /^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/ );
+		if ( hexMatch ) {
+			const hex = hexMatch[ 1 ];
+			const normalizedHex =
+				hex.length === 3
+					? hex.split( '' ).map( ( char ) => char + char ).join( '' )
+					: hex;
+			const red = parseInt( normalizedHex.slice( 0, 2 ), 16 );
+			const green = parseInt( normalizedHex.slice( 2, 4 ), 16 );
+			const blue = parseInt( normalizedHex.slice( 4, 6 ), 16 );
+			return `rgba(${ red }, ${ green }, ${ blue }, ${ opacity })`;
+		}
+
+		const rgbMatch = color.match(
+			/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*[0-9.]+\s*)?\)$/i
+		);
+		if ( rgbMatch ) {
+			return `rgba(${ rgbMatch[ 1 ] }, ${ rgbMatch[ 2 ] }, ${ rgbMatch[ 3 ] }, ${ opacity })`;
+		}
+
+		return colorValue;
+	};
+
+	// Get background style - resolve gradient slug if needed
+	// Sanitize CSS values to prevent injection
+	// Supports custom multi-color gradients
+	const backgroundStyle = {};
+	if ( gradient ) {
+		// Try to resolve gradient slug, fallback to direct value (supports custom gradients)
+		const gradientValue = getGradientValueBySlug( gradient ) || gradient;
+		// Sanitize gradient - block script injection attempts but allow CSS gradient syntax
+		// Allows linear-gradient, radial-gradient, conic-gradient with multiple color stops
+		if ( gradientValue && ! /<script|javascript:|on\w+\s*=/i.test( gradientValue ) ) {
+			backgroundStyle.background = gradientValue;
+		}
+	} else if ( backgroundColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( backgroundColor && ! /<script|javascript:|on\w+\s*=/i.test( backgroundColor ) ) {
+			backgroundStyle.background = applyColorOpacity( backgroundColor, overlayOpacity );
+		}
+	}
+	if ( backgroundImageUrl && ! /<script|javascript:/i.test( backgroundImageUrl ) ) {
+		if ( gradient && backgroundStyle.background ) {
+			backgroundStyle.backgroundImage = `${ backgroundStyle.background }, url("${ backgroundImageUrl }")`;
+			delete backgroundStyle.background;
+		} else if ( backgroundColor && backgroundStyle.background ) {
+			const overlayColor = backgroundStyle.background;
+			delete backgroundStyle.background;
+			backgroundStyle.backgroundImage = `linear-gradient(${ overlayColor }, ${ overlayColor }), url("${ backgroundImageUrl }")`;
+		} else {
+			backgroundStyle.backgroundImage = `url("${ backgroundImageUrl }")`;
+		}
+		backgroundStyle.backgroundSize = 'cover';
+		backgroundStyle.backgroundPosition = 'center';
+		backgroundStyle.backgroundRepeat = 'no-repeat';
+	}
+
+	// Get button color style - sanitize CSS values to prevent injection
+	const buttonStyle = {};
+	if ( buttonColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( buttonColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonColor ) ) {
+			buttonStyle.backgroundColor = buttonColor;
+		}
+	}
+	if ( buttonTextColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( buttonTextColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonTextColor ) ) {
+			buttonStyle.color = buttonTextColor;
+		}
+	}
+
+	// Get text color style - sanitize CSS values to prevent injection
+	const textStyle = {};
+	if ( textColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( textColor && ! /<script|javascript:|on\w+\s*=/i.test( textColor ) ) {
+			textStyle.color = textColor;
+		}
+	}
+
+	// Get accent color style for strong elements and raffle-result (uses button background color)
+	const accentStyle = {};
+	if ( buttonColor ) {
+		// Sanitize color value - block script injection attempts
+		if ( buttonColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonColor ) ) {
+			accentStyle.color = buttonColor;
+		}
+	}
 
 	const blockProps = useBlockProps.save( {
 		className: 'animated-raffle-winner-block',
@@ -389,22 +810,32 @@ export default function save( { attributes } ) {
 	return (
 		<div { ...blockProps }>
 			<div
-				className="raffle-container"
+				className={ `raffle-container text-size-${ textSize || 'medium' }` }
+				style={ backgroundStyle }
 				data-starting-number={ startingNumber }
 				data-ending-number={ endingNumber }
 				data-raffle-duration={ raffleDuration }
 				data-fullscreen={ fullscreen }
 				data-animation-type={ animationType }
 			>
-				<p className="raffle-message">
-					Raffling between <strong>{ startingNumber }</strong> and{ ' ' }
-					<strong>{ endingNumber }</strong>
+				<p className="raffle-message" style={ textStyle }>
+					{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+					<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+					<strong style={ accentStyle }>{ endingNumber }</strong>
 				</p>
-				<button className="raffle-button">Draw</button>
-				<div className="raffle-result">
-					<span className="number-result"></span>
+				<button
+					className="raffle-button"
+					style={ buttonStyle }
+					type="button"
+					data-draw-label={ __( 'Draw', 'animated-raffle-winner' ) }
+					data-draw-again-label={ __( 'Draw again', 'animated-raffle-winner' ) }
+				>
+					{ __( 'Draw', 'animated-raffle-winner' ) }
+				</button>
+				<div className="raffle-result" role="status" aria-live="polite" aria-atomic="true">
+					<span className="number-result" style={ accentStyle }></span>
 				</div>
-				<canvas className="celebration-canvas"></canvas>
+				<canvas className="celebration-canvas" aria-hidden="true"></canvas>
 			</div>
 		</div>
 	);
@@ -427,6 +858,7 @@ export default function save( { attributes } ) {
 		position: relative;
 		text-align: center;
 		padding: 3rem 2rem;
+		// Default background - can be overridden by inline styles
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 		border-radius: 20px;
 		box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
@@ -447,6 +879,46 @@ export default function save( { attributes } ) {
 			justify-content: center;
 			align-items: center;
 		}
+	}
+
+	.raffle-container.text-size-very-small {
+		.raffle-message { font-size: 1.1rem; }
+		.raffle-message strong { font-size: 1.3rem; }
+		.raffle-button { font-size: 1.1rem; }
+		.number-result, .number-preview { font-size: 3.5rem; }
+		.number-result.rolling { font-size: 2.8rem; }
+	}
+
+	.raffle-container.text-size-small {
+		.raffle-message { font-size: 1.3rem; }
+		.raffle-message strong { font-size: 1.6rem; }
+		.raffle-button { font-size: 1.3rem; }
+		.number-result, .number-preview { font-size: 4.8rem; }
+		.number-result.rolling { font-size: 3.8rem; }
+	}
+
+	.raffle-container.text-size-medium {
+		.raffle-message { font-size: 1.5rem; }
+		.raffle-message strong { font-size: 1.8rem; }
+		.raffle-button { font-size: 1.5rem; }
+		.number-result, .number-preview { font-size: 6rem; }
+		.number-result.rolling { font-size: 4rem; }
+	}
+
+	.raffle-container.text-size-large {
+		.raffle-message { font-size: 1.7rem; }
+		.raffle-message strong { font-size: 2.1rem; }
+		.raffle-button { font-size: 1.7rem; }
+		.number-result, .number-preview { font-size: 6.8rem; }
+		.number-result.rolling { font-size: 5.2rem; }
+	}
+
+	.raffle-container.text-size-super-large {
+		.raffle-message { font-size: 1.9rem; }
+		.raffle-message strong { font-size: 2.3rem; }
+		.raffle-button { font-size: 1.9rem; }
+		.number-result, .number-preview { font-size: 7.6rem; }
+		.number-result.rolling { font-size: 5.8rem; }
 	}
 
 	.raffle-message {
@@ -629,6 +1101,7 @@ export default function save( { attributes } ) {
 			}
 		}
 
+
 		.number-preview {
 			font-size: 4rem;
 		}
@@ -644,6 +1117,24 @@ export default function save( { attributes } ) {
 		.raffle-config-info {
 			flex-direction: column;
 			align-items: center;
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.animated-raffle-winner-block {
+		.raffle-container,
+		.raffle-button,
+		.number-result,
+		.celebration-canvas {
+			transition: none;
+		}
+
+		.number-result {
+			&.rolling,
+			&.revealed {
+				animation: none;
+			}
 		}
 	}
 }
@@ -685,23 +1176,57 @@ class AnimatedRaffleWinner {
 		this.numberElement = container.querySelector( '.number-result' );
 		this.canvas = container.querySelector( '.celebration-canvas' );
 		this.ctx = this.canvas ? this.canvas.getContext( '2d' ) : null;
+		this.drawLabel = this.button?.getAttribute( 'data-draw-label' ) || 'Draw';
+		this.drawAgainLabel = this.button?.getAttribute( 'data-draw-again-label' ) || 'Draw again';
 
-		this.startingNumber = parseInt(
-			container.getAttribute( 'data-starting-number' ) || '1'
+		// Validated allowed animation types
+		const allowedAnimationTypes = ['fireworks', 'confetti', 'stars', 'balloons'];
+		
+		// Parse and validate numeric attributes
+		const startingNumberRaw = parseInt(
+			container.getAttribute( 'data-starting-number' ) || '1',
+			10
 		);
-		this.endingNumber = parseInt(
-			container.getAttribute( 'data-ending-number' ) || '100'
+		const endingNumberRaw = parseInt(
+			container.getAttribute( 'data-ending-number' ) || '100',
+			10
 		);
-		this.raffleDuration = parseInt(
-			container.getAttribute( 'data-raffle-duration' ) || '5'
+		const raffleDurationRaw = parseInt(
+			container.getAttribute( 'data-raffle-duration' ) || '5',
+			10
 		);
+		
+		// Validate and constrain numeric values
+		this.startingNumber = isNaN( startingNumberRaw ) || startingNumberRaw < -999999 || startingNumberRaw > 999999
+			? 1
+			: startingNumberRaw;
+		this.endingNumber = isNaN( endingNumberRaw ) || endingNumberRaw < -999999 || endingNumberRaw > 999999
+			? 100
+			: endingNumberRaw;
+		this.raffleDuration = isNaN( raffleDurationRaw ) || raffleDurationRaw < 1 || raffleDurationRaw > 60
+			? 5
+			: raffleDurationRaw;
+		
+		// Ensure ending number is greater than starting number
+		if ( this.endingNumber <= this.startingNumber ) {
+			this.endingNumber = this.startingNumber + 1;
+		}
+		
 		this.fullscreen = container.getAttribute( 'data-fullscreen' ) === 'true';
-		this.animationType = container.getAttribute( 'data-animation-type' ) || 'fireworks';
+		
+		// Validate animation type against whitelist
+		const animationTypeRaw = container.getAttribute( 'data-animation-type' ) || 'fireworks';
+		this.animationType = allowedAnimationTypes.includes( animationTypeRaw )
+			? animationTypeRaw
+			: 'fireworks';
 
 		this.particles = [];
 		this.animationFrame = null;
 		this.celebrationActive = false;
 		this.keydownHandler = null;
+		this.celebrationTimeout = null;
+		this.reduceMotion = window.matchMedia &&
+			window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 
 		this.init();
 	}
@@ -776,6 +1301,7 @@ class AnimatedRaffleWinner {
 		if ( this.button ) {
 			this.button.disabled = false;
 			this.button.classList.remove( 'drawing' );
+			this.button.textContent = this.drawAgainLabel;
 		}
 
 		this.startCelebration();
@@ -790,7 +1316,7 @@ class AnimatedRaffleWinner {
 
 		// Create new listener
 		this.keydownHandler = ( e ) => {
-			if ( this.celebrationActive ) {
+			if ( this.celebrationActive && e.key === 'Escape' ) {
 				e.preventDefault();
 				this.stopCelebration();
 				if ( this.fullscreen && this.container.classList.contains( 'fullscreen-active' ) ) {
@@ -810,6 +1336,10 @@ class AnimatedRaffleWinner {
 			cancelAnimationFrame( this.animationFrame );
 			this.animationFrame = null;
 		}
+		if ( this.celebrationTimeout ) {
+			clearTimeout( this.celebrationTimeout );
+			this.celebrationTimeout = null;
+		}
 		this.celebrationActive = false;
 		this.particles = [];
 		if ( this.canvas && this.ctx ) {
@@ -823,9 +1353,15 @@ class AnimatedRaffleWinner {
 			return;
 		}
 
+		if ( this.reduceMotion ) {
+			this.stopCelebration();
+			return;
+		}
+
 		this.canvas.classList.add( 'active' );
 		this.particles = [];
 		this.celebrationActive = true;
+		this.celebrationTimeout = setTimeout( () => this.stopCelebration(), 8000 );
 
 		const animate = () => {
 			if ( ! this.celebrationActive ) {
