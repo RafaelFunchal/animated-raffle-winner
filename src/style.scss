@@ -75,6 +75,37 @@
 		.number-result.rolling { font-size: 5.8rem; }
 	}
 
+	.raffle-container.mode-csv {
+		&.text-size-very-small {
+			.number-result { font-size: 2rem; }
+			.number-result.rolling { font-size: 1.6rem; }
+		}
+		&.text-size-small {
+			.number-result { font-size: 2.6rem; }
+			.number-result.rolling { font-size: 2.1rem; }
+		}
+		&.text-size-medium {
+			.number-result { font-size: 3.2rem; }
+			.number-result.rolling { font-size: 2.5rem; }
+		}
+		&.text-size-large {
+			.number-result { font-size: 3.8rem; }
+			.number-result.rolling { font-size: 3rem; }
+		}
+		&.text-size-super-large {
+			.number-result { font-size: 4.4rem; }
+			.number-result.rolling { font-size: 3.4rem; }
+		}
+	}
+
+	.raffle-title {
+		color: #fff;
+		font-size: 2.2rem;
+		font-weight: 700;
+		margin: 0 0 0.75rem;
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+	}
+
 	.raffle-message {
 		color: #fff;
 		font-size: 1.5rem;
@@ -84,6 +115,78 @@
 		strong {
 			font-size: 1.8rem;
 			color: #ffd700;
+		}
+	}
+
+	.raffle-fullscreen-close {
+		display: none;
+		position: absolute;
+		top: 1.25rem;
+		right: 1.25rem;
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		border: 2px solid rgba(255, 255, 255, 0.6);
+		background: rgba(0, 0, 0, 0.35);
+		color: #fff;
+		font-size: 1.75rem;
+		line-height: 1;
+		cursor: pointer;
+		z-index: 10;
+		align-items: center;
+		justify-content: center;
+		transition: background-color 0.2s ease, transform 0.2s ease;
+
+		&:hover {
+			background: rgba(0, 0, 0, 0.6);
+			transform: scale(1.06);
+		}
+
+		&:focus-visible {
+			outline: 3px solid #ffd700;
+			outline-offset: 2px;
+		}
+	}
+
+	.raffle-container.fullscreen-active .raffle-fullscreen-close {
+		display: inline-flex;
+	}
+
+	.raffle-history-wrapper {
+		margin-top: 1.25rem;
+		position: relative;
+		z-index: 2;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.raffle-history-list {
+		margin: 0 0 0.75rem;
+		color: rgba(255, 255, 255, 0.92);
+		font-size: 1rem;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+	}
+
+	.raffle-reset-button {
+		background: rgba(0, 0, 0, 0.28);
+		color: #fff;
+		border: 1px solid rgba(255, 255, 255, 0.5);
+		border-radius: 999px;
+		padding: 0.4rem 1.1rem;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+
+		&:hover {
+			background: rgba(0, 0, 0, 0.45);
+		}
+
+		&:focus-visible {
+			outline: 2px solid #ffd700;
+			outline-offset: 2px;
 		}
 	}
 
@@ -132,6 +235,10 @@
 
 	.number-result {
 		display: inline-block;
+		max-width: 100%;
+		line-height: 1.2;
+		word-break: break-word;
+		overflow-wrap: anywhere;
 		font-size: 6rem;
 		font-weight: bold;
 		color: #ffd700;
