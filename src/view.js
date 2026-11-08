@@ -19,7 +19,18 @@ class AnimatedRaffleWinner {
 		this.exitFullscreenLabel = this.button?.getAttribute( 'data-exit-fullscreen-label' ) || 'Exit fullscreen';
 
 		// Validated allowed animation types and raffle modes
-		const allowedAnimationTypes = [ 'fireworks', 'confetti', 'stars', 'balloons' ];
+		const allowedAnimationTypes = [
+			'fireworks',
+			'confetti',
+			'cannons',
+			'coins',
+			'stars',
+			'sparkles',
+			'balloons',
+			'hearts',
+			'streamers',
+			'none',
+		];
 		const allowedRaffleModes = [ 'numbers', 'theater', 'csv' ];
 
 		const raffleModeRaw = container.getAttribute( 'data-raffle-mode' ) || 'numbers';
@@ -40,6 +51,10 @@ class AnimatedRaffleWinner {
 			container.getAttribute( 'data-raffle-duration' ) || '5',
 			10
 		);
+		const celebrationDurationRaw = parseInt(
+			container.getAttribute( 'data-celebration-duration' ) || '8',
+			10
+		);
 
 		// Validate and constrain numeric values
 		this.startingNumber = isNaN( startingNumberRaw ) || startingNumberRaw < -999999 || startingNumberRaw > 999999
@@ -51,6 +66,9 @@ class AnimatedRaffleWinner {
 		this.raffleDuration = isNaN( raffleDurationRaw ) || raffleDurationRaw < 1 || raffleDurationRaw > 60
 			? 5
 			: raffleDurationRaw;
+		this.celebrationDuration = isNaN( celebrationDurationRaw ) || celebrationDurationRaw < 1 || celebrationDurationRaw > 60
+			? 8
+			: celebrationDurationRaw;
 
 		// Ensure ending number is greater than starting number
 		if ( this.endingNumber <= this.startingNumber ) {
@@ -124,6 +142,7 @@ class AnimatedRaffleWinner {
 		this.particles = [];
 		this.animationFrame = null;
 		this.celebrationActive = false;
+		this.spawningParticles = false;
 		this.keydownHandler = null;
 		this.celebrationTimeout = null;
 		this.fullscreenCloseBtn = null;
@@ -321,8 +340,29 @@ class AnimatedRaffleWinner {
 		const btn = document.createElement( 'button' );
 		btn.type = 'button';
 		btn.className = 'raffle-fullscreen-close';
+		btn.hidden = true;
 		btn.setAttribute( 'aria-label', this.exitFullscreenLabel );
+		btn.setAttribute( 'data-tooltip', this.exitFullscreenLabel );
+		btn.setAttribute( 'title', this.exitFullscreenLabel );
 		btn.textContent = '×';
+		Object.assign( btn.style, {
+			position: 'fixed',
+			top: '3.5rem',
+			right: '1.5rem',
+			width: '40px',
+			height: '40px',
+			padding: '0',
+			borderRadius: '50%',
+			border: '2px solid rgba(255, 255, 255, 0.85)',
+			background: 'rgba(0, 0, 0, 0.55)',
+			color: '#fff',
+			fontSize: '1.5rem',
+			fontWeight: '600',
+			lineHeight: '1',
+			cursor: 'pointer',
+			zIndex: '100002',
+			boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
+		} );
 		btn.addEventListener( 'click', () => this.exitFullscreen() );
 		this.container.appendChild( btn );
 		this.fullscreenCloseBtn = btn;
@@ -330,6 +370,9 @@ class AnimatedRaffleWinner {
 
 	exitFullscreen() {
 		this.stopCelebration();
+		if ( this.fullscreenCloseBtn ) {
+			this.fullscreenCloseBtn.hidden = true;
+		}
 		if ( this.container.classList.contains( 'fullscreen-active' ) ) {
 			this.container.classList.remove( 'fullscreen-active' );
 			this.resizeCanvas();
@@ -427,6 +470,10 @@ class AnimatedRaffleWinner {
 		}
 
 		if ( this.fullscreen ) {
+			this.ensureFullscreenCloseButton();
+			if ( this.fullscreenCloseBtn ) {
+				this.fullscreenCloseBtn.hidden = false;
+			}
 			this.container.classList.add( 'fullscreen-active' );
 			this.resizeCanvas();
 			this.addKeyListener();
@@ -523,6 +570,7 @@ class AnimatedRaffleWinner {
 			this.celebrationTimeout = null;
 		}
 		this.celebrationActive = false;
+		this.spawningParticles = false;
 		this.particles = [];
 		if ( this.canvas && this.ctx ) {
 			this.ctx.clearRect( 0, 0, this.canvas.width, this.canvas.height );
@@ -530,12 +578,17 @@ class AnimatedRaffleWinner {
 		}
 	}
 
+	finishCelebrationGracefully() {
+		this.spawningParticles = false;
+		this.celebrationTimeout = null;
+	}
+
 	startCelebration() {
 		if ( ! this.canvas || ! this.ctx ) {
 			return;
 		}
 
-		if ( this.reduceMotion ) {
+		if ( this.reduceMotion || this.animationType === 'none' ) {
 			this.stopCelebration();
 			return;
 		}
@@ -543,7 +596,20 @@ class AnimatedRaffleWinner {
 		this.canvas.classList.add( 'active' );
 		this.particles = [];
 		this.celebrationActive = true;
-		this.celebrationTimeout = setTimeout( () => this.stopCelebration(), 8000 );
+		this.spawningParticles = true;
+		this.celebrationTimeout = setTimeout(
+			() => this.finishCelebrationGracefully(),
+			this.celebrationDuration * 1000
+		);
+
+		// Initial burst for cannons or balloons so it feels immediate on reveal
+		if ( this.animationType === 'cannons' ) {
+			this.createCannonBurst();
+		} else if ( this.animationType === 'balloons' ) {
+			for ( let i = 0; i < 8; i++ ) {
+				this.createBalloon( true );
+			}
+		}
 
 		const animate = () => {
 			if ( ! this.celebrationActive ) {
@@ -552,31 +618,63 @@ class AnimatedRaffleWinner {
 
 			this.ctx.clearRect( 0, 0, this.canvas.width, this.canvas.height );
 
-			switch ( this.animationType ) {
-				case 'fireworks':
-					if ( Math.random() < 0.1 ) {
-						this.createFirework();
-					}
-					break;
-				case 'confetti':
-					if ( Math.random() < 0.3 ) {
-						this.createConfetti();
-					}
-					break;
-				case 'stars':
-					if ( Math.random() < 0.2 ) {
-						this.createStar();
-					}
-					break;
-				case 'balloons':
-					if ( Math.random() < 0.15 ) {
-						this.createBalloon();
-					}
-					break;
+			if ( this.spawningParticles ) {
+				switch ( this.animationType ) {
+					case 'fireworks':
+						if ( Math.random() < 0.1 ) {
+							this.createFirework();
+						}
+						break;
+					case 'confetti':
+						if ( Math.random() < 0.3 ) {
+							this.createConfetti();
+						}
+						break;
+					case 'cannons':
+						if ( Math.random() < 0.08 ) {
+							this.createCannonBurst();
+						}
+						break;
+					case 'coins':
+						if ( Math.random() < 0.22 ) {
+							this.createCoin();
+						}
+						break;
+					case 'stars':
+						if ( Math.random() < 0.2 ) {
+							this.createStar();
+						}
+						break;
+					case 'sparkles':
+						if ( Math.random() < 0.35 ) {
+							this.createSparkle();
+						}
+						break;
+					case 'balloons':
+						if ( Math.random() < 0.15 ) {
+							this.createBalloon();
+						}
+						break;
+					case 'hearts':
+						if ( Math.random() < 0.18 ) {
+							this.createHeart();
+						}
+						break;
+					case 'streamers':
+						if ( Math.random() < 0.18 ) {
+							this.createStreamer();
+						}
+						break;
+				}
 			}
 
 			this.updateParticles();
 			this.drawParticles();
+
+			if ( ! this.spawningParticles && this.particles.length === 0 ) {
+				this.stopCelebration();
+				return;
+			}
 
 			this.animationFrame = requestAnimationFrame( animate );
 		};
@@ -647,22 +745,142 @@ class AnimatedRaffleWinner {
 		} );
 	}
 
-	createBalloon() {
+	createBalloon( initialWave = false ) {
 		const x = Math.random() * this.canvas.width;
-		const y = this.canvas.height + 50;
-		const colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#a8dadc', '#f1faee'];
-		const color = colors[ Math.floor( Math.random() * colors.length ) ];
+		const size = 22 + Math.random() * 18;
+		const y = initialWave
+			? this.canvas.height + size + Math.random() * 120
+			: this.canvas.height + size + 20;
+		const palette = [
+			{ base: '#ff4d6d', light: '#ff8fa3', dark: '#c9184a' },
+			{ base: '#4ecdc4', light: '#a8f0ec', dark: '#1d7874' },
+			{ base: '#ffd166', light: '#fff0b3', dark: '#d49b00' },
+			{ base: '#8338ec', light: '#c77dff', dark: '#5a189a' },
+			{ base: '#3a86ff', light: '#90dbf4', dark: '#1d4ed8' },
+			{ base: '#ff9f1c', light: '#ffcaa6', dark: '#d97706' },
+			{ base: '#06d6a0', light: '#80ffdb', dark: '#059669' },
+		];
+		const colorSet = palette[ Math.floor( Math.random() * palette.length ) ];
+		const depthScale = size / 40;
 
 		this.particles.push( {
 			type: 'balloon',
 			x,
 			y,
-			vx: ( Math.random() - 0.5 ) * 0.5,
-			vy: -( 1 + Math.random() * 1 ),
+			vx: ( Math.random() - 0.5 ) * 0.4,
+			vy: -( 1.4 + depthScale * 1.6 + Math.random() * 0.6 ),
+			oscillation: Math.random() * Math.PI * 2,
+			oscillationSpeed: 0.04 + Math.random() * 0.03,
+			swayAmplitude: 0.6 + Math.random() * 0.6,
+			tilt: 0,
+			color: colorSet.base,
+			lightColor: colorSet.light,
+			darkColor: colorSet.dark,
+			life: 0.92,
+			size,
+		} );
+	}
+
+	createCannonBurst() {
+		const colors = [ '#ff6b6b', '#4ecdc4', '#ffe66d', '#ff9f1c', '#a8dadc', '#c77dff' ];
+		const sides = [
+			{ x: 0, baseAngle: -Math.PI * 0.35 },
+			{ x: this.canvas.width, baseAngle: -Math.PI * 0.65 },
+		];
+
+		sides.forEach( ( side ) => {
+			for ( let i = 0; i < 18; i++ ) {
+				const angle = side.baseAngle + ( Math.random() - 0.5 ) * 0.45;
+				const speed = 7 + Math.random() * 7;
+				const color = colors[ Math.floor( Math.random() * colors.length ) ];
+
+				this.particles.push( {
+					type: 'cannon',
+					x: side.x,
+					y: this.canvas.height,
+					vx: Math.cos( angle ) * speed,
+					vy: Math.sin( angle ) * speed,
+					rotation: Math.random() * 360,
+					rotationSpeed: ( Math.random() - 0.5 ) * 14,
+					color,
+					life: 1,
+					size: 6 + Math.random() * 6,
+				} );
+			}
+		} );
+	}
+
+	createCoin() {
+		const x = Math.random() * this.canvas.width;
+		const y = -25;
+
+		this.particles.push( {
+			type: 'coin',
+			x,
+			y,
+			vx: ( Math.random() - 0.5 ) * 1.5,
+			vy: 2 + Math.random() * 2.5,
+			spin: Math.random() * Math.PI * 2,
+			spinSpeed: 0.12 + Math.random() * 0.1,
+			life: 1,
+			size: 12 + Math.random() * 8,
+		} );
+	}
+
+	createSparkle() {
+		const x = Math.random() * this.canvas.width;
+		const y = Math.random() * this.canvas.height;
+		const colors = [ '#ffd700', '#fff6cc', '#ffffff', '#ffe066' ];
+		const color = colors[ Math.floor( Math.random() * colors.length ) ];
+
+		this.particles.push( {
+			type: 'sparkle',
+			x,
+			y,
+			vy: 0.25 + Math.random() * 0.4,
+			phase: 0,
+			color,
+			life: 1,
+			size: 10 + Math.random() * 14,
+		} );
+	}
+
+	createHeart() {
+		const x = Math.random() * this.canvas.width;
+		const y = this.canvas.height + 30;
+		const colors = [ '#ff4d6d', '#ff758f', '#ff8fa3', '#ffb3c1', '#c9184a' ];
+		const color = colors[ Math.floor( Math.random() * colors.length ) ];
+
+		this.particles.push( {
+			type: 'heart',
+			x,
+			y,
+			vx: ( Math.random() - 0.5 ) * 0.4,
+			vy: -( 1.2 + Math.random() * 1.2 ),
 			oscillation: Math.random() * Math.PI * 2,
 			color,
 			life: 1,
-			size: 20 + Math.random() * 15,
+			size: 14 + Math.random() * 12,
+		} );
+	}
+
+	createStreamer() {
+		const x = Math.random() * this.canvas.width;
+		const y = -40;
+		const colors = [ '#ff6b6b', '#4ecdc4', '#ffe66d', '#ff9f1c', '#c77dff', '#f1faee' ];
+		const color = colors[ Math.floor( Math.random() * colors.length ) ];
+
+		this.particles.push( {
+			type: 'streamer',
+			x,
+			y,
+			vx: ( Math.random() - 0.5 ) * 1,
+			vy: 2 + Math.random() * 1.8,
+			phase: Math.random() * Math.PI * 2,
+			color,
+			life: 1,
+			length: 28 + Math.random() * 20,
+			width: 4 + Math.random() * 3,
 		} );
 	}
 
@@ -681,7 +899,28 @@ class AnimatedRaffleWinner {
 					p.y += p.vy;
 					p.rotation += p.rotationSpeed;
 					p.vy += 0.1;
-					if ( p.y > this.canvas.height ) {
+					if ( p.y > this.canvas.height + 20 ) {
+						p.life = 0;
+					}
+					break;
+
+				case 'cannon':
+					p.x += p.vx;
+					p.y += p.vy;
+					p.vx *= 0.99;
+					p.vy += 0.22;
+					p.rotation += p.rotationSpeed;
+					if ( p.y > this.canvas.height + 30 ) {
+						p.life = 0;
+					}
+					break;
+
+				case 'coin':
+					p.x += p.vx;
+					p.y += p.vy;
+					p.vy += 0.08;
+					p.spin += p.spinSpeed;
+					if ( p.y > this.canvas.height + 30 ) {
 						p.life = 0;
 					}
 					break;
@@ -694,11 +933,36 @@ class AnimatedRaffleWinner {
 					}
 					break;
 
-				case 'balloon':
-					p.x += p.vx + Math.sin( p.oscillation ) * 0.5;
+				case 'sparkle':
 					p.y += p.vy;
-					p.oscillation += 0.1;
-					if ( p.y < -50 ) {
+					p.phase += 0.12;
+					p.life -= 0.018;
+					break;
+
+				case 'balloon':
+					p.oscillation += p.oscillationSpeed || 0.05;
+					p.x += p.vx + Math.sin( p.oscillation ) * ( p.swayAmplitude || 0.7 );
+					p.y += p.vy;
+					p.tilt = Math.cos( p.oscillation ) * 0.1;
+					if ( p.y < -p.size * 2.5 ) {
+						p.life = 0;
+					}
+					break;
+
+				case 'heart':
+					p.x += p.vx + Math.sin( p.oscillation ) * 0.6;
+					p.y += p.vy;
+					p.oscillation += 0.08;
+					if ( p.y < -( p.size * 2 ) ) {
+						p.life = 0;
+					}
+					break;
+
+				case 'streamer':
+					p.x += p.vx + Math.sin( p.phase ) * 0.8;
+					p.y += p.vy;
+					p.phase += 0.18;
+					if ( p.y > this.canvas.height + ( p.length || 50 ) + 20 ) {
 						p.life = 0;
 					}
 					break;
@@ -722,6 +986,7 @@ class AnimatedRaffleWinner {
 					break;
 
 				case 'confetti':
+				case 'cannon':
 					this.ctx.translate( p.x, p.y );
 					this.ctx.rotate( ( p.rotation * Math.PI ) / 180 );
 					this.ctx.fillStyle = p.color;
@@ -732,14 +997,30 @@ class AnimatedRaffleWinner {
 					}
 					break;
 
+				case 'coin':
+					this.drawCoin( p.x, p.y, p.size, p.spin );
+					break;
+
 				case 'star':
 					this.ctx.translate( p.x, p.y );
 					this.ctx.scale( p.scale, p.scale );
 					this.drawStar( 0, 0, p.points, p.size, p.size / 2, p.color );
 					break;
 
+				case 'sparkle':
+					this.drawSparkle( p.x, p.y, p.size * Math.abs( Math.sin( p.phase ) ), p.color );
+					break;
+
 				case 'balloon':
-					this.drawBalloon( p.x, p.y, p.size, p.color );
+					this.drawBalloon( p );
+					break;
+
+				case 'heart':
+					this.drawHeart( p.x, p.y, p.size, p.color );
+					break;
+
+				case 'streamer':
+					this.drawStreamer( p.x, p.y, p.length, p.width, p.phase, p.color );
 					break;
 			}
 
@@ -771,23 +1052,142 @@ class AnimatedRaffleWinner {
 		this.ctx.stroke();
 	}
 
-	drawBalloon( x, y, size, color ) {
-		this.ctx.fillStyle = color;
-		this.ctx.beginPath();
-		this.ctx.ellipse( x, y, size * 0.6, size, 0, 0, Math.PI * 2 );
-		this.ctx.fill();
+	drawBalloon( p ) {
+		const { x, y, size, color, lightColor, darkColor, tilt = 0, oscillation = 0 } = p;
+		const rx = size * 0.78;
+		const ry = size;
 
-		this.ctx.strokeStyle = color;
-		this.ctx.lineWidth = 2;
+		this.ctx.translate( x, y );
+
+		// Wavy ribbon string trailing below the knot
+		const stringLength = size * 1.45;
+		const waveOffset = Math.sin( oscillation * 1.5 ) * 6;
+		this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+		this.ctx.lineWidth = 1.5;
+		this.ctx.lineCap = 'round';
 		this.ctx.beginPath();
-		this.ctx.moveTo( x, y + size );
-		this.ctx.quadraticCurveTo( x + 5, y + size + 10, x, y + size + 20 );
+		this.ctx.moveTo( 0, ry + 4 );
+		this.ctx.bezierCurveTo(
+			waveOffset,
+			ry + stringLength * 0.35,
+			-waveOffset,
+			ry + stringLength * 0.7,
+			waveOffset * 0.5,
+			ry + stringLength
+		);
 		this.ctx.stroke();
 
+		// Slight sway tilt for the balloon body
+		this.ctx.rotate( tilt );
+
+		// 3D radial gradient shading
+		const grad = this.ctx.createRadialGradient(
+			-rx * 0.3,
+			-ry * 0.35,
+			size * 0.08,
+			0,
+			0,
+			ry * 1.1
+		);
+		grad.addColorStop( 0, lightColor || '#ffffff' );
+		grad.addColorStop( 0.45, color );
+		grad.addColorStop( 1, darkColor || color );
+
+		// Teardrop balloon body path (rounded top, tapered bottom neck)
+		this.ctx.fillStyle = grad;
+		this.ctx.beginPath();
+		this.ctx.moveTo( 0, -ry );
+		this.ctx.bezierCurveTo( rx * 1.1, -ry, rx * 1.05, ry * 0.35, 0, ry );
+		this.ctx.bezierCurveTo( -rx * 1.05, ry * 0.35, -rx * 1.1, -ry, 0, -ry );
+		this.ctx.closePath();
+		this.ctx.fill();
+
+		// Tied knot at base of balloon
+		this.ctx.fillStyle = darkColor || color;
+		this.ctx.beginPath();
+		this.ctx.moveTo( 0, ry - 1 );
+		this.ctx.lineTo( -4, ry + 5 );
+		this.ctx.lineTo( 4, ry + 5 );
+		this.ctx.closePath();
+		this.ctx.fill();
+
+		// Glossy primary specular highlight
+		this.ctx.fillStyle = 'rgba(255, 255, 255, 0.42)';
+		this.ctx.beginPath();
+		this.ctx.ellipse( -rx * 0.34, -ry * 0.34, rx * 0.18, ry * 0.28, -0.35, 0, Math.PI * 2 );
+		this.ctx.fill();
+
+		// Small secondary highlight dot
 		this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
 		this.ctx.beginPath();
-		this.ctx.ellipse( x - size * 0.2, y - size * 0.3, size * 0.15, size * 0.25, -0.3, 0, Math.PI * 2 );
+		this.ctx.arc( -rx * 0.18, -ry * 0.62, rx * 0.06, 0, Math.PI * 2 );
 		this.ctx.fill();
+	}
+
+	drawCoin( x, y, radius, spin ) {
+		const rx = Math.max( 1.5, Math.abs( Math.cos( spin ) ) * radius );
+		this.ctx.fillStyle = '#ffd700';
+		this.ctx.strokeStyle = '#d4a017';
+		this.ctx.lineWidth = 2;
+		this.ctx.beginPath();
+		this.ctx.ellipse( x, y, rx, radius, 0, 0, Math.PI * 2 );
+		this.ctx.fill();
+		this.ctx.stroke();
+
+		if ( rx > 4 ) {
+			this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+			this.ctx.lineWidth = 1.5;
+			this.ctx.beginPath();
+			this.ctx.ellipse( x, y, rx * 0.65, radius * 0.65, 0, 0, Math.PI * 2 );
+			this.ctx.stroke();
+		}
+	}
+
+	drawSparkle( x, y, size, color ) {
+		if ( size <= 0.5 ) {
+			return;
+		}
+		const inner = size * 0.2;
+		this.ctx.translate( x, y );
+		this.ctx.fillStyle = color;
+		this.ctx.beginPath();
+		this.ctx.moveTo( 0, -size );
+		this.ctx.quadraticCurveTo( inner, -inner, size, 0 );
+		this.ctx.quadraticCurveTo( inner, inner, 0, size );
+		this.ctx.quadraticCurveTo( -inner, inner, -size, 0 );
+		this.ctx.quadraticCurveTo( -inner, -inner, 0, -size );
+		this.ctx.closePath();
+		this.ctx.fill();
+	}
+
+	drawHeart( x, y, size, color ) {
+		this.ctx.translate( x, y );
+		this.ctx.fillStyle = color;
+		this.ctx.beginPath();
+		const topCurveHeight = size * 0.3;
+		this.ctx.moveTo( 0, topCurveHeight );
+		this.ctx.bezierCurveTo( 0, 0, -size / 2, 0, -size / 2, topCurveHeight );
+		this.ctx.bezierCurveTo( -size / 2, ( size + topCurveHeight ) / 2, 0, ( size + topCurveHeight ) / 1.5, 0, size );
+		this.ctx.bezierCurveTo( 0, ( size + topCurveHeight ) / 1.5, size / 2, ( size + topCurveHeight ) / 2, size / 2, topCurveHeight );
+		this.ctx.bezierCurveTo( size / 2, 0, 0, 0, 0, topCurveHeight );
+		this.ctx.closePath();
+		this.ctx.fill();
+	}
+
+	drawStreamer( x, y, length, width, phase, color ) {
+		this.ctx.strokeStyle = color;
+		this.ctx.lineWidth = width;
+		this.ctx.lineCap = 'round';
+		this.ctx.beginPath();
+		for ( let i = 0; i <= length; i += 4 ) {
+			const offsetX = Math.sin( phase + i * 0.2 ) * 8;
+			if ( i === 0 ) {
+				this.ctx.moveTo( x + offsetX, y + i );
+			} else {
+				this.ctx.lineTo( x + offsetX, y + i );
+			}
+		}
+		this.ctx.stroke();
 	}
 }
 

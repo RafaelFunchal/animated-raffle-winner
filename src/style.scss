@@ -25,7 +25,7 @@
 			left: 0;
 			width: 100vw;
 			height: 100vh;
-			z-index: 9999;
+			z-index: 100001;
 			border-radius: 0;
 			margin: 0;
 			display: flex;
@@ -99,6 +99,7 @@
 	}
 
 	.raffle-title {
+		font-family: inherit;
 		color: #fff;
 		font-size: 2.2rem;
 		font-weight: 700;
@@ -107,6 +108,7 @@
 	}
 
 	.raffle-message {
+		font-family: inherit;
 		color: #fff;
 		font-size: 1.5rem;
 		margin-bottom: 2rem;
@@ -120,35 +122,69 @@
 
 	.raffle-fullscreen-close {
 		display: none;
-		position: absolute;
-		top: 1.25rem;
-		right: 1.25rem;
-		width: 44px;
-		height: 44px;
+		position: fixed;
+		top: 3.5rem;
+		right: 1.5rem;
+		width: 40px;
+		height: 40px;
+		padding: 0;
 		border-radius: 50%;
-		border: 2px solid rgba(255, 255, 255, 0.6);
-		background: rgba(0, 0, 0, 0.35);
+		border: 2px solid rgba(255, 255, 255, 0.85);
+		background: rgba(0, 0, 0, 0.55);
 		color: #fff;
-		font-size: 1.75rem;
+		font-size: 1.5rem;
+		font-weight: 600;
 		line-height: 1;
 		cursor: pointer;
-		z-index: 10;
+		z-index: 100002;
 		align-items: center;
 		justify-content: center;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 		transition: background-color 0.2s ease, transform 0.2s ease;
 
+		&[hidden] {
+			display: none !important;
+		}
+
+		&::after {
+			content: attr(data-tooltip);
+			position: absolute;
+			top: 50%;
+			right: calc(100% + 10px);
+			transform: translateY(-50%);
+			background: rgba(0, 0, 0, 0.85);
+			color: #fff;
+			font-size: 0.8rem;
+			font-weight: 500;
+			line-height: 1.2;
+			padding: 0.35rem 0.65rem;
+			border-radius: 6px;
+			white-space: nowrap;
+			pointer-events: none;
+			opacity: 0;
+			transition: opacity 0.15s ease;
+		}
+
 		&:hover {
-			background: rgba(0, 0, 0, 0.6);
+			background: rgba(0, 0, 0, 0.8);
 			transform: scale(1.06);
+
+			&::after {
+				opacity: 1;
+			}
 		}
 
 		&:focus-visible {
 			outline: 3px solid #ffd700;
 			outline-offset: 2px;
+
+			&::after {
+				opacity: 1;
+			}
 		}
 	}
 
-	.raffle-container.fullscreen-active .raffle-fullscreen-close {
+	.raffle-container.fullscreen-active .raffle-fullscreen-close:not([hidden]) {
 		display: inline-flex;
 	}
 
@@ -170,6 +206,7 @@
 	}
 
 	.raffle-reset-button {
+		font-family: inherit;
 		background: rgba(0, 0, 0, 0.28);
 		color: #fff;
 		border: 1px solid rgba(255, 255, 255, 0.5);
@@ -191,6 +228,7 @@
 	}
 
 	.raffle-button {
+		font-family: inherit;
 		background: #ffd700;
 		color: #333;
 		border: none;
@@ -234,6 +272,7 @@
 	}
 
 	.number-result {
+		font-family: inherit;
 		display: inline-block;
 		max-width: 100%;
 		line-height: 1.2;
@@ -270,6 +309,7 @@
 	}
 
 	.number-preview {
+		font-family: inherit;
 		font-size: 6rem;
 		font-weight: bold;
 		color: rgba(255, 255, 255, 0.3);
