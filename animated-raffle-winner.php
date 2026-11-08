@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       Animated Raffle Winner
- * Description:       An interactive block to create animated raffles with random numbers and celebratory fireworks.
- * Version:           1.0
+ * Description:       An interactive block to create animated raffles with random numbers, theater seats, or CSV participant lists and celebratory animations.
+ * Version:           1.1
  * Requires at least: 6.1
  * Requires PHP:      7.0
  * Author:            RafaelFunchal
@@ -26,7 +26,22 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @see https://developer.wordpress.org/reference/functions/register_block_type/
  */
 function animated_raffle_winner_block_init() {
-	register_block_type( __DIR__ . '/build/' );
+	load_plugin_textdomain(
+		'animated-raffle-winner',
+		false,
+		dirname( plugin_basename( __FILE__ ) ) . '/languages'
+	);
+
+	$block = register_block_type( __DIR__ . '/build/' );
+	if ( $block && ! empty( $block->editor_script_handles ) ) {
+		foreach ( $block->editor_script_handles as $handle ) {
+			wp_set_script_translations(
+				$handle,
+				'animated-raffle-winner',
+				plugin_dir_path( __FILE__ ) . 'languages'
+			);
+		}
+	}
 }
 add_action( 'init', 'animated_raffle_winner_block_init' );
 
