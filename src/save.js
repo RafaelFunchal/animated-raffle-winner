@@ -32,6 +32,7 @@ export default function save( { attributes } ) {
 		raffleDuration,
 		fullscreen,
 		animationType,
+		celebrationDuration = 8,
 		textSize,
 		backgroundColor,
 		overlayOpacity,
@@ -195,6 +196,7 @@ export default function save( { attributes } ) {
 				data-raffle-duration={ raffleDuration }
 				data-fullscreen={ fullscreen }
 				data-animation-type={ animationType }
+				data-celebration-duration={ celebrationDuration }
 			>
 				{ safeCustomTitle && (
 					<h3 className="raffle-title" style={ textStyle }>

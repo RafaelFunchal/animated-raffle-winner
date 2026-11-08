@@ -247,6 +247,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		raffleDuration,
 		fullscreen,
 		animationType,
+		celebrationDuration = 8,
 		textSize,
 		backgroundColor,
 		overlayOpacity,
@@ -363,8 +364,14 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	const animationOptions = [
 		{ label: __( 'Fireworks', 'animated-raffle-winner' ), value: 'fireworks' },
 		{ label: __( 'Confetti', 'animated-raffle-winner' ), value: 'confetti' },
+		{ label: __( 'Party Cannons', 'animated-raffle-winner' ), value: 'cannons' },
+		{ label: __( 'Gold Coins', 'animated-raffle-winner' ), value: 'coins' },
 		{ label: __( 'Stars', 'animated-raffle-winner' ), value: 'stars' },
+		{ label: __( 'Sparkles', 'animated-raffle-winner' ), value: 'sparkles' },
 		{ label: __( 'Balloons', 'animated-raffle-winner' ), value: 'balloons' },
+		{ label: __( 'Floating Hearts', 'animated-raffle-winner' ), value: 'hearts' },
+		{ label: __( 'Spiral Streamers', 'animated-raffle-winner' ), value: 'streamers' },
+		{ label: __( 'None', 'animated-raffle-winner' ), value: 'none' },
 	];
 	const textSizeOptions = [
 		{ label: __( 'Extra Small', 'animated-raffle-winner' ), value: 'very-small' },
@@ -916,6 +923,19 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						}
 						help={ __( 'Choose the celebration style after revealing the result', 'animated-raffle-winner' ) }
 					/>
+					{ animationType !== 'none' && (
+						<RangeControl
+							label={ __( 'Celebration Duration (seconds)', 'animated-raffle-winner' ) }
+							value={ celebrationDuration ?? 8 }
+							onChange={ ( value ) =>
+								setAttributes( { celebrationDuration: value ?? 8 } )
+							}
+							min={ 1 }
+							max={ 30 }
+							step={ 1 }
+							help={ __( 'How long the celebration animation plays after revealing the winner', 'animated-raffle-winner' ) }
+						/>
+					) }
 				</PanelBody>
 			</InspectorControls>
 
@@ -973,7 +993,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							{ __( 'Fullscreen:', 'animated-raffle-winner' ) } <strong>{ fullscreen ? __( 'Yes', 'animated-raffle-winner' ) : __( 'No', 'animated-raffle-winner' ) }</strong>
 						</p>
 						<p className="raffle-info">
-							{ __( 'Animation:', 'animated-raffle-winner' ) } <strong>{ animationOptions.find( opt => opt.value === animationType )?.label }</strong>
+							{ __( 'Animation:', 'animated-raffle-winner' ) } <strong>{ animationOptions.find( opt => opt.value === animationType )?.label }{ animationType !== 'none' ? ` (${ celebrationDuration ?? 8 }s)` : '' }</strong>
 						</p>
 					</div>
 				</div>

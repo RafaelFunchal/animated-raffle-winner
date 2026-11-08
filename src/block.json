@@ -93,6 +93,10 @@
 			"type": "string",
 			"default": "fireworks"
 		},
+		"celebrationDuration": {
+			"type": "number",
+			"default": 8
+		},
 		"textSize": {
 			"type": "string",
 			"default": "medium"
@@ -125,7 +129,10 @@
 	},
 	"supports": {
 		"html": false,
-		"align": ["wide", "full"]
+		"align": ["wide", "full"],
+		"typography": {
+			"fontFamily": true
+		}
 	},
 	"textdomain": "animated-raffle-winner",
 	"editorScript": "file:./index.js",
