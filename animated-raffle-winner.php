@@ -32,7 +32,13 @@ function animated_raffle_winner_block_init() {
 		dirname( plugin_basename( __FILE__ ) ) . '/languages'
 	);
 
-	$block = register_block_type( __DIR__ . '/build/' );
+	$style_path = __DIR__ . '/build/style-index.css';
+	$block_args = array();
+	if ( file_exists( $style_path ) ) {
+		$block_args['version'] = (string) filemtime( $style_path );
+	}
+
+	$block = register_block_type( __DIR__ . '/build/', $block_args );
 	if ( $block && ! empty( $block->editor_script_handles ) ) {
 		foreach ( $block->editor_script_handles as $handle ) {
 			wp_set_script_translations(
