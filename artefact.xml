@@ -7,24 +7,27 @@
 Contributors:      RafaelFunchal
 Tags:              block, raffle, random, lottery, animation
 Tested up to:      7.1.4
-Stable tag:        1.0
+Stable tag:        1.1
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
-An interactive block to create animated raffles with random numbers and celebratory fireworks.
+An interactive block to create animated raffles with random numbers, theater seats, or CSV participant lists and celebratory animations.
 
 == Description ==
 
-The Animated Raffle Winner block allows you to create engaging raffle experiences on your WordPress site. With smooth animations and exciting visual effects, this block is perfect for promotions, events, contests, and any situation that requires random number selection.
+The Animated Raffle Winner block allows you to create engaging raffle experiences on your WordPress site. With smooth animations and exciting visual effects, this block is perfect for promotions, events, contests, and any situation that requires random number, seat, or participant selection.
 
 **Key Features:**
 
-* Set a custom number range (start and end)
-* Number rolling animation for 5 seconds before revealing the result
-* Highlighted display of the drawn number
-* Animated fireworks to celebrate the result
-* Simple and intuitive interface
-* Fully responsive
+* Three raffle modes in a tabbed sidebar: **Numbers** (custom numeric range), **Theater** (row/section letter + number, e.g. `A1` to `C10`), and **CSV** (upload or paste a participant list)
+* CSV column selector (pick one or multiple columns to display, with optional header row skipping and hyphen/space separator toggle)
+* Option to **exclude previous winners** (no repeats) with a live history of drawn winners and a reset button
+* Custom title heading and option to hide the default range/participant subtitle
+* Cryptographically unbiased random selection (`window.crypto.getRandomValues`)
+* Decelerating "slot machine" rolling animation (1 to 15 seconds) before revealing the winner
+* Celebratory animations: Fireworks, Confetti, Stars, and Balloons
+* Fullscreen mode with keyboard (`Escape`) and on-screen close (`×`) button
+* Simple, accessible, and fully responsive interface
 
 **How to Use:**
 
@@ -63,11 +66,15 @@ Yes, the block is fully responsive and works perfectly on smartphones and tablet
 
 = Can I customize the animation duration? =
 
-Currently, the animation has a fixed duration of 5 seconds to provide a consistent and exciting experience.
+Yes! You can set the raffle animation duration between 1 and 15 seconds in the Raffle Settings panel.
+
+= Can I draw theater seats (letters and numbers) or participant names from a CSV? =
+
+Yes! In the Raffle Settings sidebar panel, switch between the **Numbers**, **Theater** (e.g. `A1` to `C10`), and **CSV** tabs. In CSV mode, you can upload a `.csv` file or paste rows, skip the header row, and choose which column(s) to display on the frontend.
 
 = Is the raffle truly random? =
 
-Yes, we use JavaScript's Math.random() function, which generates pseudo-random numbers suitable for most raffle applications.
+Yes, the block uses the browser's Web Crypto API (`window.crypto.getRandomValues()`) with rejection sampling for unbiased random selection (with automatic fallback to `Math.random()`).
 
 == Screenshots ==
 
@@ -77,6 +84,17 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 4. Raffle result with large number and fireworks
 
 == Changelog ==
+
+= 1.1 =
+* Added tabbed Raffle Settings with three modes: Numbers, Theater (Letter + Number, e.g., A1 to C10), and CSV participant lists
+* Added CSV column selector to choose which column(s) to display on the frontend, with a toggle for hyphen or space separation
+* Added "Exclude previous winners (no repeats)" option with drawn winner history and reset button
+* Added optional Custom Title and toggle to hide the default range/participant subtitle
+* Upgraded random winner selection to use `window.crypto.getRandomValues()` with unbiased rejection sampling
+* Added decelerating slot-machine roll effect before revealing the winner
+* Added an on-screen close (`×`) button in fullscreen mode for mobile and touch devices
+* Added `load_plugin_textdomain` and `wp_set_script_translations` support
+* Tested up to WordPress 7.1.4
 
 = 1.0 =
 * Added background image selector from Media Library
@@ -94,6 +112,9 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 * Responsive interface
 
 == Upgrade Notice ==
+
+= 1.1 =
+Adds Theater (Letter + Number) and CSV participant raffle modes, multi-column CSV selection, no-repeat draws, custom titles, and decelerating roll animations!
 
 = 1.0 =
 Major update with background color and gradient customization support. Upgrade to customize your raffle block backgrounds!
@@ -119,8 +140,8 @@ To build the plugin from source:
     <content><![CDATA[<?php
 /**
  * Plugin Name:       Animated Raffle Winner
- * Description:       An interactive block to create animated raffles with random numbers and celebratory fireworks.
- * Version:           1.0
+ * Description:       An interactive block to create animated raffles with random numbers, theater seats, or CSV participant lists and celebratory animations.
+ * Version:           1.1
  * Requires at least: 6.1
  * Requires PHP:      7.0
  * Author:            RafaelFunchal
@@ -144,7 +165,22 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @see https://developer.wordpress.org/reference/functions/register_block_type/
  */
 function animated_raffle_winner_block_init() {
-	register_block_type( __DIR__ . '/build/' );
+	load_plugin_textdomain(
+		'animated-raffle-winner',
+		false,
+		dirname( plugin_basename( __FILE__ ) ) . '/languages'
+	);
+
+	$block = register_block_type( __DIR__ . '/build/' );
+	if ( $block && ! empty( $block->editor_script_handles ) ) {
+		foreach ( $block->editor_script_handles as $handle ) {
+			wp_set_script_translations(
+				$handle,
+				'animated-raffle-winner',
+				plugin_dir_path( __FILE__ ) . 'languages'
+			);
+		}
+	}
 }
 add_action( 'init', 'animated_raffle_winner_block_init' );
 
@@ -156,7 +192,7 @@ add_action( 'init', 'animated_raffle_winner_block_init' );
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "rafaelfunchal/animated-raffle-winner",
-	"version": "1.0",
+	"version": "1.1",
 	"title": "Animated Raffle Winner",
 	"category": "widgets",
 	"icon": "randomize",
@@ -171,6 +207,10 @@ add_action( 'init', 'animated_raffle_winner_block_init' );
 		}
 	},
 	"attributes": {
+		"raffleMode": {
+			"type": "string",
+			"default": "numbers"
+		},
 		"startingNumber": {
 			"type": "number",
 			"default": 1
@@ -178,6 +218,58 @@ add_action( 'init', 'animated_raffle_winner_block_init' );
 		"endingNumber": {
 			"type": "number",
 			"default": 100
+		},
+		"startingLetter": {
+			"type": "string",
+			"default": "A"
+		},
+		"endingLetter": {
+			"type": "string",
+			"default": "C"
+		},
+		"theaterStartingNumber": {
+			"type": "number",
+			"default": 1
+		},
+		"theaterEndingNumber": {
+			"type": "number",
+			"default": 10
+		},
+		"csvFileName": {
+			"type": "string",
+			"default": ""
+		},
+		"csvRawContent": {
+			"type": "string",
+			"default": ""
+		},
+		"csvSkipHeader": {
+			"type": "boolean",
+			"default": false
+		},
+		"csvSelectedColumns": {
+			"type": "array",
+			"default": [ 0 ]
+		},
+		"csvUseSeparator": {
+			"type": "boolean",
+			"default": false
+		},
+		"csvItems": {
+			"type": "array",
+			"default": []
+		},
+		"excludePreviousWinners": {
+			"type": "boolean",
+			"default": false
+		},
+		"customTitle": {
+			"type": "string",
+			"default": ""
+		},
+		"hideSubtitle": {
+			"type": "boolean",
+			"default": false
 		},
 		"raffleDuration": {
 			"type": "number",
@@ -257,6 +349,153 @@ import './style.scss';
 import Edit from './edit';
 import save from './save';
 import metadata from './block.json';
+import { useBlockProps, getGradientValueBySlug } from '@wordpress/block-editor';
+import { __ } from '@wordpress/i18n';
+
+const v10Deprecated = {
+	attributes: {
+		startingNumber: { type: 'number', default: 1 },
+		endingNumber: { type: 'number', default: 100 },
+		raffleDuration: { type: 'number', default: 5 },
+		fullscreen: { type: 'boolean', default: false },
+		animationType: { type: 'string', default: 'fireworks' },
+		textSize: { type: 'string', default: 'medium' },
+		backgroundColor: { type: 'string' },
+		overlayOpacity: { type: 'number', default: 100 },
+		gradient: { type: 'string' },
+		buttonColor: { type: 'string' },
+		textColor: { type: 'string' },
+		buttonTextColor: { type: 'string' },
+		backgroundImageUrl: { type: 'string' },
+		backgroundImageId: { type: 'number' },
+	},
+	save( { attributes } ) {
+		const {
+			startingNumber,
+			endingNumber,
+			raffleDuration,
+			fullscreen,
+			animationType,
+			textSize,
+			backgroundColor,
+			overlayOpacity,
+			gradient,
+			buttonColor,
+			textColor,
+			buttonTextColor,
+			backgroundImageUrl,
+		} = attributes;
+
+		const applyColorOpacity = ( colorValue, opacityValue ) => {
+			const opacity = Math.max( 0, Math.min( 100, opacityValue ?? 100 ) ) / 100;
+			const color = colorValue?.trim();
+			if ( ! color ) {
+				return colorValue;
+			}
+			const hexMatch = color.match( /^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/ );
+			if ( hexMatch ) {
+				const hex = hexMatch[ 1 ];
+				const normalizedHex =
+					hex.length === 3
+						? hex.split( '' ).map( ( char ) => char + char ).join( '' )
+						: hex;
+				const red = parseInt( normalizedHex.slice( 0, 2 ), 16 );
+				const green = parseInt( normalizedHex.slice( 2, 4 ), 16 );
+				const blue = parseInt( normalizedHex.slice( 4, 6 ), 16 );
+				return `rgba(${ red }, ${ green }, ${ blue }, ${ opacity })`;
+			}
+			const rgbMatch = color.match(
+				/^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*,\s*[0-9.]+\s*)?\)$/i
+			);
+			if ( rgbMatch ) {
+				return `rgba(${ rgbMatch[ 1 ] }, ${ rgbMatch[ 2 ] }, ${ rgbMatch[ 3 ] }, ${ opacity })`;
+			}
+			return colorValue;
+		};
+
+		const backgroundStyle = {};
+		if ( gradient ) {
+			const gradientValue = getGradientValueBySlug( gradient ) || gradient;
+			if ( gradientValue && ! /<script|javascript:|on\w+\s*=/i.test( gradientValue ) ) {
+				backgroundStyle.background = gradientValue;
+			}
+		} else if ( backgroundColor ) {
+			if ( backgroundColor && ! /<script|javascript:|on\w+\s*=/i.test( backgroundColor ) ) {
+				backgroundStyle.background = applyColorOpacity( backgroundColor, overlayOpacity );
+			}
+		}
+		if ( backgroundImageUrl && ! /<script|javascript:/i.test( backgroundImageUrl ) ) {
+			if ( gradient && backgroundStyle.background ) {
+				backgroundStyle.backgroundImage = `${ backgroundStyle.background }, url("${ backgroundImageUrl }")`;
+				delete backgroundStyle.background;
+			} else if ( backgroundColor && backgroundStyle.background ) {
+				const overlayColor = backgroundStyle.background;
+				delete backgroundStyle.background;
+				backgroundStyle.backgroundImage = `linear-gradient(${ overlayColor }, ${ overlayColor }), url("${ backgroundImageUrl }")`;
+			} else {
+				backgroundStyle.backgroundImage = `url("${ backgroundImageUrl }")`;
+			}
+			backgroundStyle.backgroundSize = 'cover';
+			backgroundStyle.backgroundPosition = 'center';
+			backgroundStyle.backgroundRepeat = 'no-repeat';
+		}
+
+		const buttonStyle = {};
+		if ( buttonColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonColor ) ) {
+			buttonStyle.backgroundColor = buttonColor;
+		}
+		if ( buttonTextColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonTextColor ) ) {
+			buttonStyle.color = buttonTextColor;
+		}
+
+		const textStyle = {};
+		if ( textColor && ! /<script|javascript:|on\w+\s*=/i.test( textColor ) ) {
+			textStyle.color = textColor;
+		}
+
+		const accentStyle = {};
+		if ( buttonColor && ! /<script|javascript:|on\w+\s*=/i.test( buttonColor ) ) {
+			accentStyle.color = buttonColor;
+		}
+
+		const blockProps = useBlockProps.save( {
+			className: 'animated-raffle-winner-block',
+		} );
+
+		return (
+			<div { ...blockProps }>
+				<div
+					className={ `raffle-container text-size-${ textSize || 'medium' }` }
+					style={ backgroundStyle }
+					data-starting-number={ startingNumber }
+					data-ending-number={ endingNumber }
+					data-raffle-duration={ raffleDuration }
+					data-fullscreen={ fullscreen }
+					data-animation-type={ animationType }
+				>
+					<p className="raffle-message" style={ textStyle }>
+						{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+						<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+						<strong style={ accentStyle }>{ endingNumber }</strong>
+					</p>
+					<button
+						className="raffle-button"
+						style={ buttonStyle }
+						type="button"
+						data-draw-label={ __( 'Draw', 'animated-raffle-winner' ) }
+						data-draw-again-label={ __( 'Draw again', 'animated-raffle-winner' ) }
+					>
+						{ __( 'Draw', 'animated-raffle-winner' ) }
+					</button>
+					<div className="raffle-result" role="status" aria-live="polite" aria-atomic="true">
+						<span className="number-result" style={ accentStyle }></span>
+					</div>
+					<canvas className="celebration-canvas" aria-hidden="true"></canvas>
+				</div>
+			</div>
+		);
+	},
+};
 
 /**
  * Every block starts by registering a new block type definition.
@@ -273,6 +512,8 @@ registerBlockType( metadata.name, {
 	 * @see ./save.js
 	 */
 	save,
+
+	deprecated: [ v10Deprecated ],
 } );
 ]]></content>
   </file>
@@ -296,7 +537,8 @@ import { useBlockProps, InspectorControls, PanelColorSettings, MediaUpload, Medi
 /**
  * WordPress components
  */
-import { PanelBody, TextControl, RangeControl, ToggleControl, SelectControl, Button, ButtonGroup } from '@wordpress/components';
+import { PanelBody, TextControl, TextareaControl, RangeControl, ToggleControl, SelectControl, CheckboxControl, Button, ButtonGroup, FormFileUpload, Notice } from '@wordpress/components';
+import { useState } from '@wordpress/element';
 
 /**
  * Lets webpack process CSS, SASS or SCSS files referenced in JavaScript files.
@@ -306,6 +548,197 @@ import { PanelBody, TextControl, RangeControl, ToggleControl, SelectControl, But
  */
 import './editor.scss';
 
+const LETTERS = Array.from( { length: 26 }, ( _, index ) => {
+	const letter = String.fromCharCode( 65 + index );
+	return { label: letter, value: letter };
+} );
+
+const MAX_CSV_FILE_SIZE = 1024 * 1024; // 1 MB max file size
+const MAX_CSV_RAW_LENGTH = 200000; // 200 KB max stored raw content
+const MAX_CSV_ITEMS = 5000; // Maximum number of participants
+const MAX_ITEM_LENGTH = 120; // Maximum characters per participant name
+
+/**
+ * Sanitize a single participant name to prevent XSS, control-character injection,
+ * and spreadsheet formula injection.
+ *
+ * @param {string} value Raw cell string.
+ * @return {string} Sanitized participant name.
+ */
+function sanitizeParticipantName( value ) {
+	if ( typeof value !== 'string' ) {
+		return '';
+	}
+
+	return value
+		// Remove ASCII and Unicode control characters
+		.replace( /[\u0000-\u001F\u007F-\u009F]/g, '' )
+		// Strip HTML tags and angle brackets
+		.replace( /<[^>]*>/g, '' )
+		.replace( /[<>]/g, '' )
+		// Strip leading CSV formula triggers (=, +, @, or tab/carriage return)
+		.replace( /^[=+@\t\r]+/, '' )
+		.trim()
+		.slice( 0, MAX_ITEM_LENGTH );
+}
+
+/**
+ * Detect the column delimiter for a CSV line outside of quotes.
+ *
+ * @param {string} line Raw CSV line.
+ * @return {string} Delimiter character (',', ';', or '\t').
+ */
+function detectDelimiter( line ) {
+	let inQuotes = false;
+	const counts = { ',': 0, ';': 0, '\t': 0 };
+
+	for ( let i = 0; i < line.length; i++ ) {
+		const char = line[ i ];
+		if ( char === '"' ) {
+			if ( inQuotes && line[ i + 1 ] === '"' ) {
+				i++;
+			} else {
+				inQuotes = ! inQuotes;
+			}
+		} else if ( ! inQuotes && counts[ char ] !== undefined ) {
+			counts[ char ]++;
+		}
+	}
+
+	if ( counts[ ',' ] > 0 ) {
+		return ',';
+	}
+	if ( counts[ ';' ] > 0 ) {
+		return ';';
+	}
+	if ( counts[ '\t' ] > 0 ) {
+		return '\t';
+	}
+	return ',';
+}
+
+/**
+ * Parse a single CSV line into an array of sanitized column strings, respecting quotes.
+ *
+ * @param {string} line      Raw CSV line.
+ * @param {string} delimiter Column delimiter character.
+ * @return {string[]} Array of sanitized column values.
+ */
+function parseCsvRow( line, delimiter = ',' ) {
+	const trimmed = line.trim();
+	if ( ! trimmed ) {
+		return [];
+	}
+
+	const cells = [];
+	let current = '';
+	let inQuotes = false;
+
+	for ( let i = 0; i < trimmed.length; i++ ) {
+		const char = trimmed[ i ];
+		if ( char === '"' ) {
+			if ( inQuotes && trimmed[ i + 1 ] === '"' ) {
+				current += '"';
+				i++;
+			} else {
+				inQuotes = ! inQuotes;
+			}
+		} else if ( char === delimiter && ! inQuotes ) {
+			cells.push( sanitizeParticipantName( current ) );
+			current = '';
+		} else {
+			current += char;
+		}
+	}
+	cells.push( sanitizeParticipantName( current ) );
+
+	return cells;
+}
+
+/**
+ * Inspect raw CSV text and return metadata for each detected column.
+ *
+ * @param {string}  rawText    Raw CSV text.
+ * @param {boolean} skipHeader Whether the first row is a header row.
+ * @return {Array<{index: number, header: string, sample: string}>} Detected columns.
+ */
+function getCsvColumnsInfo( rawText, skipHeader = false ) {
+	if ( ! rawText || typeof rawText !== 'string' ) {
+		return [];
+	}
+
+	const boundedText = rawText.slice( 0, MAX_CSV_RAW_LENGTH );
+	const lines = boundedText
+		.replace( /^\uFEFF/, '' )
+		.split( /\r?\n|\r/ )
+		.map( ( line ) => line.trim() )
+		.filter( Boolean );
+
+	if ( lines.length === 0 ) {
+		return [];
+	}
+
+	const delimiter = detectDelimiter( lines[ 0 ] );
+	const firstRow = parseCsvRow( lines[ 0 ], delimiter );
+	const secondRow = lines.length > 1 ? parseCsvRow( lines[ 1 ], delimiter ) : [];
+	const columnCount = Math.min( 20, Math.max( firstRow.length, secondRow.length ) );
+
+	const columns = [];
+	for ( let index = 0; index < columnCount; index++ ) {
+		const header = skipHeader ? ( firstRow[ index ] || '' ) : '';
+		const sample = skipHeader ? ( secondRow[ index ] || '' ) : ( firstRow[ index ] || '' );
+		columns.push( { index, header, sample } );
+	}
+
+	return columns;
+}
+
+/**
+ * Parse raw CSV content into an array of sanitized participant strings
+ * using the selected column indices.
+ *
+ * @param {string}   rawText         Raw CSV text.
+ * @param {boolean}  skipHeader      Whether to skip the first non-empty row.
+ * @param {number[]} selectedColumns Array of 0-based column indices to display.
+ * @param {boolean}  useSeparator    Whether to join columns with ' - ' instead of ' '.
+ * @return {string[]} Array of participant display strings.
+ */
+function parseCsvParticipants( rawText, skipHeader = false, selectedColumns = [ 0 ], useSeparator = false ) {
+	if ( ! rawText || typeof rawText !== 'string' ) {
+		return [];
+	}
+
+	const boundedText = rawText.slice( 0, MAX_CSV_RAW_LENGTH );
+	const lines = boundedText
+		.replace( /^\uFEFF/, '' )
+		.split( /\r?\n|\r/ )
+		.map( ( line ) => line.trim() )
+		.filter( Boolean );
+
+	if ( lines.length === 0 ) {
+		return [];
+	}
+
+	const delimiter = detectDelimiter( lines[ 0 ] );
+	const rows = skipHeader ? lines.slice( 1 ) : lines;
+	const validColumns = Array.isArray( selectedColumns ) && selectedColumns.length > 0
+		? selectedColumns.filter( ( col ) => Number.isInteger( col ) && col >= 0 && col < 20 )
+		: [ 0 ];
+	const columnsToUse = validColumns.length > 0 ? validColumns : [ 0 ];
+	const joiner = useSeparator ? ' - ' : ' ';
+
+	return rows
+		.slice( 0, MAX_CSV_ITEMS )
+		.map( ( line ) => {
+			const rowCells = parseCsvRow( line, delimiter );
+			const pickedValues = columnsToUse
+				.map( ( colIndex ) => rowCells[ colIndex ] || '' )
+				.filter( Boolean );
+			return sanitizeParticipantName( pickedValues.join( joiner ) );
+		} )
+		.filter( Boolean );
+}
+
 /**
  * The edit function describes the structure of your block in the context of the
  * editor. This represents what the editor will render when the block is used.
@@ -314,10 +747,24 @@ import './editor.scss';
  *
  * @return {Element} Element to render.
  */
-export default function Edit( { attributes, setAttributes } ) {
+export default function Edit( { attributes, setAttributes, clientId } ) {
 	const {
+		raffleMode = 'numbers',
 		startingNumber,
 		endingNumber,
+		startingLetter = 'A',
+		endingLetter = 'C',
+		theaterStartingNumber = 1,
+		theaterEndingNumber = 10,
+		csvFileName = '',
+		csvRawContent = '',
+		csvSkipHeader = false,
+		csvSelectedColumns = [ 0 ],
+		csvUseSeparator = false,
+		csvItems = [],
+		excludePreviousWinners = false,
+		customTitle = '',
+		hideSubtitle = false,
 		raffleDuration,
 		fullscreen,
 		animationType,
@@ -447,34 +894,371 @@ export default function Edit( { attributes, setAttributes } ) {
 		{ label: __( 'Large', 'animated-raffle-winner' ), value: 'large' },
 		{ label: __( 'Extra Large', 'animated-raffle-winner' ), value: 'super-large' },
 	];
+	const modeTabs = [
+		{ name: 'numbers', title: __( 'Numbers', 'animated-raffle-winner' ) },
+		{ name: 'theater', title: __( 'Theater', 'animated-raffle-winner' ) },
+		{ name: 'csv', title: __( 'CSV', 'animated-raffle-winner' ) },
+	];
+	const activeMode = [ 'numbers', 'theater', 'csv' ].includes( raffleMode )
+		? raffleMode
+		: 'numbers';
+	const tabIdPrefix = `arw-tab-${ clientId || 'block' }`;
+
+	const handleTabKeyDown = ( event, index ) => {
+		let nextIndex = null;
+		if ( event.key === 'ArrowRight' ) {
+			nextIndex = ( index + 1 ) % modeTabs.length;
+		} else if ( event.key === 'ArrowLeft' ) {
+			nextIndex = ( index - 1 + modeTabs.length ) % modeTabs.length;
+		} else if ( event.key === 'Home' ) {
+			nextIndex = 0;
+		} else if ( event.key === 'End' ) {
+			nextIndex = modeTabs.length - 1;
+		}
+
+		if ( nextIndex !== null ) {
+			event.preventDefault();
+			const nextTab = modeTabs[ nextIndex ];
+			setAttributes( { raffleMode: nextTab.name } );
+			const nextButton = event.currentTarget.parentElement?.querySelector(
+				`#${ tabIdPrefix }-tab-${ nextTab.name }`
+			);
+			nextButton?.focus();
+		}
+	};
+
+	const [ csvError, setCsvError ] = useState( '' );
+
+	const handleCsvFileUpload = ( event ) => {
+		const file = event.target?.files?.[ 0 ];
+		if ( ! file ) {
+			return;
+		}
+
+		setCsvError( '' );
+
+		// Validate file extension and MIME type
+		const fileName = ( file.name || '' ).replace( /[\u0000-\u001F\u007F-\u009F<>]/g, '' ).slice( 0, 100 );
+		const isAllowedExtension = /\.(csv|txt)$/i.test( fileName );
+		const isAllowedMime = ! file.type || [ 'text/csv', 'text/plain', 'application/csv', 'application/vnd.ms-excel' ].includes( file.type );
+
+		if ( ! isAllowedExtension || ! isAllowedMime ) {
+			setCsvError( __( 'Invalid file type. Please select a .csv or .txt file.', 'animated-raffle-winner' ) );
+			return;
+		}
+
+		// Validate file size (max 1 MB) to prevent browser/editor DoS
+		if ( file.size > MAX_CSV_FILE_SIZE ) {
+			setCsvError( __( 'File is too large. Maximum allowed size is 1 MB.', 'animated-raffle-winner' ) );
+			return;
+		}
+
+		const reader = new window.FileReader();
+		reader.onerror = () => {
+			setCsvError( __( 'Failed to read the selected CSV file.', 'animated-raffle-winner' ) );
+		};
+		reader.onload = ( loadEvent ) => {
+			const rawContent = typeof loadEvent.target?.result === 'string'
+				? loadEvent.target.result.slice( 0, MAX_CSV_RAW_LENGTH )
+				: '';
+			const detectedCols = getCsvColumnsInfo( rawContent, csvSkipHeader );
+			const maxColIndex = Math.max( 0, detectedCols.length - 1 );
+			const validSelectedCols = ( Array.isArray( csvSelectedColumns ) ? csvSelectedColumns : [ 0 ] )
+				.filter( ( col ) => Number.isInteger( col ) && col >= 0 && col <= maxColIndex );
+			const nextSelectedCols = validSelectedCols.length > 0 ? validSelectedCols : [ 0 ];
+			const parsedItems = parseCsvParticipants( rawContent, csvSkipHeader, nextSelectedCols, csvUseSeparator );
+			setAttributes( {
+				csvFileName: fileName,
+				csvRawContent: rawContent,
+				csvSelectedColumns: nextSelectedCols,
+				csvItems: parsedItems,
+			} );
+		};
+		reader.readAsText( file );
+	};
+
+	const safeCsvItems = Array.isArray( csvItems ) ? csvItems : [];
+	const csvColumnsInfo = getCsvColumnsInfo( csvRawContent, csvSkipHeader );
+	const activeSelectedColumns = Array.isArray( csvSelectedColumns ) && csvSelectedColumns.length > 0
+		? csvSelectedColumns
+		: [ 0 ];
+
+	const handleToggleCsvColumn = ( colIndex, isChecked ) => {
+		let nextColumns;
+		if ( isChecked ) {
+			nextColumns = [ ...new Set( [ ...activeSelectedColumns, colIndex ] ) ].sort( ( a, b ) => a - b );
+		} else {
+			nextColumns = activeSelectedColumns.filter( ( item ) => item !== colIndex );
+			if ( nextColumns.length === 0 ) {
+				nextColumns = [ 0 ];
+			}
+		}
+
+		setAttributes( {
+			csvSelectedColumns: nextColumns,
+			csvItems: parseCsvParticipants( csvRawContent, csvSkipHeader, nextColumns, csvUseSeparator ),
+		} );
+	};
 
 	return (
 		<>
 			<InspectorControls>
 				<PanelBody title={ __( 'Raffle Settings', 'animated-raffle-winner' ) }>
-					<TextControl
-						label={ __( 'Starting Number', 'animated-raffle-winner' ) }
-						type="number"
-						value={ startingNumber }
-						onChange={ ( value ) => {
-							const num = parseInt( value, 10 );
-							if ( ! isNaN( num ) && num >= -999999 && num <= 999999 ) {
-								setAttributes( { startingNumber: num } );
-							}
-						} }
-						help={ __( 'The lowest number in the range (-999999 to 999999)', 'animated-raffle-winner' ) }
-					/>
-					<TextControl
-						label={ __( 'Ending Number', 'animated-raffle-winner' ) }
-						type="number"
-						value={ endingNumber }
-						onChange={ ( value ) => {
-							const num = parseInt( value, 10 );
-							if ( ! isNaN( num ) && num >= -999999 && num <= 999999 ) {
-								setAttributes( { endingNumber: num } );
-							}
-						} }
-						help={ __( 'The highest number in the range (-999999 to 999999)', 'animated-raffle-winner' ) }
+					<div
+						className="arw-mode-tabs"
+						role="tablist"
+						aria-label={ __( 'Raffle Mode', 'animated-raffle-winner' ) }
+					>
+						{ modeTabs.map( ( tab, index ) => {
+							const isSelected = activeMode === tab.name;
+							return (
+								<button
+									key={ tab.name }
+									type="button"
+									role="tab"
+									id={ `${ tabIdPrefix }-tab-${ tab.name }` }
+									aria-selected={ isSelected }
+									aria-controls={ `${ tabIdPrefix }-panel-${ tab.name }` }
+									tabIndex={ isSelected ? 0 : -1 }
+									className={ `arw-mode-tab${ isSelected ? ' is-active' : '' }` }
+									onClick={ () => setAttributes( { raffleMode: tab.name } ) }
+									onKeyDown={ ( event ) => handleTabKeyDown( event, index ) }
+								>
+									{ tab.title }
+								</button>
+							);
+						} ) }
+					</div>
+
+					<div
+						role="tabpanel"
+						id={ `${ tabIdPrefix }-panel-${ activeMode }` }
+						aria-labelledby={ `${ tabIdPrefix }-tab-${ activeMode }` }
+						className="arw-mode-tabpanel"
+					>
+						{ activeMode === 'numbers' && (
+							<>
+								<TextControl
+									label={ __( 'Starting Number', 'animated-raffle-winner' ) }
+									type="number"
+									value={ startingNumber }
+									onChange={ ( value ) => {
+										const num = parseInt( value, 10 );
+										if ( ! isNaN( num ) && num >= -999999 && num <= 999999 ) {
+											setAttributes( { startingNumber: num } );
+										}
+									} }
+									help={ __( 'The lowest number in the range (-999999 to 999999)', 'animated-raffle-winner' ) }
+								/>
+								<TextControl
+									label={ __( 'Ending Number', 'animated-raffle-winner' ) }
+									type="number"
+									value={ endingNumber }
+									onChange={ ( value ) => {
+										const num = parseInt( value, 10 );
+										if ( ! isNaN( num ) && num >= -999999 && num <= 999999 ) {
+											setAttributes( { endingNumber: num } );
+										}
+									} }
+									help={ __( 'The highest number in the range (-999999 to 999999)', 'animated-raffle-winner' ) }
+								/>
+							</>
+						) }
+
+						{ activeMode === 'theater' && (
+							<>
+								<SelectControl
+									label={ __( 'Starting Letter', 'animated-raffle-winner' ) }
+									value={ startingLetter }
+									options={ LETTERS }
+									onChange={ ( value ) =>
+										setAttributes( { startingLetter: value } )
+									}
+									help={ __( 'First row/section letter (A to Z)', 'animated-raffle-winner' ) }
+								/>
+								<SelectControl
+									label={ __( 'Ending Letter', 'animated-raffle-winner' ) }
+									value={ endingLetter }
+									options={ LETTERS }
+									onChange={ ( value ) =>
+										setAttributes( { endingLetter: value } )
+									}
+									help={ __( 'Last row/section letter (A to Z)', 'animated-raffle-winner' ) }
+								/>
+								<TextControl
+									label={ __( 'Starting Number', 'animated-raffle-winner' ) }
+									type="number"
+									value={ theaterStartingNumber }
+									onChange={ ( value ) => {
+										const num = parseInt( value, 10 );
+										if ( ! isNaN( num ) && num >= 1 && num <= 9999 ) {
+											setAttributes( { theaterStartingNumber: num } );
+										}
+									} }
+									help={ __( 'Lowest seat/item number (1 to 9999)', 'animated-raffle-winner' ) }
+								/>
+								<TextControl
+									label={ __( 'Ending Number', 'animated-raffle-winner' ) }
+									type="number"
+									value={ theaterEndingNumber }
+									onChange={ ( value ) => {
+										const num = parseInt( value, 10 );
+										if ( ! isNaN( num ) && num >= 1 && num <= 9999 ) {
+											setAttributes( { theaterEndingNumber: num } );
+										}
+									} }
+									help={ __( 'Highest seat/item number (1 to 9999)', 'animated-raffle-winner' ) }
+								/>
+								<p className="arw-mode-summary">
+									{ __( 'Range preview:', 'animated-raffle-winner' ) }{ ' ' }
+									<strong>
+										{ `${ startingLetter }${ theaterStartingNumber }` } – { `${ endingLetter }${ theaterEndingNumber }` }
+									</strong>
+								</p>
+							</>
+						) }
+
+						{ activeMode === 'csv' && (
+							<>
+								<div className="arw-csv-upload-actions">
+									<FormFileUpload
+										accept=".csv,text/csv,.txt"
+										onChange={ handleCsvFileUpload }
+										render={ ( { openFileDialog } ) => (
+											<Button variant="secondary" onClick={ openFileDialog }>
+												{ csvFileName
+													? __( 'Replace CSV File', 'animated-raffle-winner' )
+													: __( 'Upload CSV File', 'animated-raffle-winner' ) }
+											</Button>
+										) }
+									/>
+									{ ( csvFileName || csvRawContent ) && (
+										<Button
+											variant="tertiary"
+											isDestructive
+											onClick={ () => {
+												setCsvError( '' );
+												setAttributes( {
+													csvFileName: '',
+													csvRawContent: '',
+													csvItems: [],
+												} );
+											} }
+										>
+											{ __( 'Clear', 'animated-raffle-winner' ) }
+										</Button>
+									) }
+								</div>
+								{ csvError && (
+									<Notice
+										status="error"
+										isDismissible={ false }
+									>
+										{ csvError }
+									</Notice>
+								) }
+								{ csvFileName && (
+									<p className="arw-csv-filename">
+										{ __( 'File:', 'animated-raffle-winner' ) } <strong>{ csvFileName }</strong>
+									</p>
+								) }
+								<ToggleControl
+									label={ __( 'Skip first row (header)', 'animated-raffle-winner' ) }
+									checked={ Boolean( csvSkipHeader ) }
+									onChange={ ( value ) => {
+										const nextSkip = Boolean( value );
+										setAttributes( {
+											csvSkipHeader: nextSkip,
+											csvItems: parseCsvParticipants( csvRawContent, nextSkip, activeSelectedColumns, csvUseSeparator ),
+										} );
+									} }
+									help={ __( 'Ignore the first line if your CSV includes column titles', 'animated-raffle-winner' ) }
+								/>
+								{ csvColumnsInfo.length > 1 && (
+									<div className="arw-csv-columns" role="group" aria-label={ __( 'Columns to display', 'animated-raffle-winner' ) }>
+										<p className="arw-csv-columns-title">
+											{ __( 'Columns to display', 'animated-raffle-winner' ) }
+										</p>
+										{ csvColumnsInfo.map( ( col ) => {
+											const colNumber = col.index + 1;
+											let label = col.header
+												? `${ __( 'Column', 'animated-raffle-winner' ) } ${ colNumber }: ${ col.header }`
+												: `${ __( 'Column', 'animated-raffle-winner' ) } ${ colNumber }`;
+											if ( col.sample ) {
+												label += ` (${ col.sample })`;
+											}
+											return (
+												<CheckboxControl
+													key={ col.index }
+													label={ label }
+													checked={ activeSelectedColumns.includes( col.index ) }
+													onChange={ ( isChecked ) =>
+														handleToggleCsvColumn( col.index, isChecked )
+													}
+												/>
+											);
+										} ) }
+										{ activeSelectedColumns.length > 1 && (
+											<div className="arw-csv-separator-toggle">
+												<ToggleControl
+													label={ __( 'Show hyphen separator (-)', 'animated-raffle-winner' ) }
+													checked={ Boolean( csvUseSeparator ) }
+													onChange={ ( value ) => {
+														const nextUseSeparator = Boolean( value );
+														setAttributes( {
+															csvUseSeparator: nextUseSeparator,
+															csvItems: parseCsvParticipants(
+																csvRawContent,
+																csvSkipHeader,
+																activeSelectedColumns,
+																nextUseSeparator
+															),
+														} );
+													} }
+													help={ __( 'When off, selected columns are joined with a space (e.g. First + Last Name).', 'animated-raffle-winner' ) }
+												/>
+											</div>
+										) }
+									</div>
+								) }
+								<TextareaControl
+									label={ __( 'CSV Content / Participants', 'animated-raffle-winner' ) }
+									value={ csvRawContent }
+									rows={ 5 }
+									onChange={ ( value ) => {
+										const boundedValue = ( value || '' ).slice( 0, MAX_CSV_RAW_LENGTH );
+										setAttributes( {
+											csvRawContent: boundedValue,
+											csvItems: parseCsvParticipants( boundedValue, csvSkipHeader, activeSelectedColumns, csvUseSeparator ),
+										} );
+									} }
+									help={ __( 'Upload a .csv file above or paste CSV rows.', 'animated-raffle-winner' ) }
+								/>
+								<p className="arw-mode-summary">
+									{ __( 'Loaded participants:', 'animated-raffle-winner' ) }{ ' ' }
+									<strong>{ safeCsvItems.length }</strong>
+									{ safeCsvItems.length > 0 && (
+										<>
+											<br />
+											<span>
+												{ __( 'Preview:', 'animated-raffle-winner' ) }{ ' ' }
+												<strong>{ safeCsvItems[ 0 ] }</strong>
+											</span>
+										</>
+									) }
+								</p>
+							</>
+						) }
+					</div>
+
+					<hr style={ { margin: '16px 0', borderColor: '#ddd' } } />
+					<ToggleControl
+						label={ __( 'Exclude previous winners (no repeats)', 'animated-raffle-winner' ) }
+						checked={ Boolean( excludePreviousWinners ) }
+						onChange={ ( value ) =>
+							setAttributes( { excludePreviousWinners: Boolean( value ) } )
+						}
+						help={ __( 'Prevent the same number, seat, or participant from being drawn more than once until reset', 'animated-raffle-winner' ) }
 					/>
 					<RangeControl
 						label={ __( 'Raffle Duration (seconds)', 'animated-raffle-winner' ) }
@@ -489,6 +1273,25 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 				<PanelBody title={ __( 'Display Settings', 'animated-raffle-winner' ) } initialOpen={ false }>
+					<TextControl
+						label={ __( 'Custom Title (optional)', 'animated-raffle-winner' ) }
+						value={ customTitle }
+						onChange={ ( value ) =>
+							setAttributes( {
+								customTitle: sanitizeParticipantName( value || '' ),
+							} )
+						}
+						help={ __( 'Optional heading displayed above the raffle message (e.g. Grand Prize Raffle)', 'animated-raffle-winner' ) }
+					/>
+					<ToggleControl
+						label={ __( 'Hide range/participant subtitle', 'animated-raffle-winner' ) }
+						checked={ Boolean( hideSubtitle ) }
+						onChange={ ( value ) =>
+							setAttributes( { hideSubtitle: Boolean( value ) } )
+						}
+						help={ __( 'Hide the default "Raffling between..." or "Raffling among..." line', 'animated-raffle-winner' ) }
+					/>
+					<hr style={ { margin: '16px 0', borderColor: '#ddd' } } />
 					<MediaUploadCheck>
 						<MediaUpload
 							onSelect={ ( media ) =>
@@ -638,12 +1441,39 @@ export default function Edit( { attributes, setAttributes } ) {
 			</InspectorControls>
 
 			<div { ...blockProps }>
-				<div className={ `raffle-container text-size-${ textSize || 'medium' }` } style={ backgroundStyle }>
-					<p className="raffle-message" style={ textStyle }>
-						{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
-						<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
-						<strong style={ accentStyle }>{ endingNumber }</strong>
-					</p>
+				<div className={ `raffle-container text-size-${ textSize || 'medium' } mode-${ activeMode }` } style={ backgroundStyle }>
+					{ customTitle && (
+						<h3 className="raffle-title" style={ textStyle }>
+							{ customTitle }
+						</h3>
+					) }
+					{ ! hideSubtitle && (
+						<p className="raffle-message" style={ textStyle }>
+							{ activeMode === 'theater' && (
+								<>
+									{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+									<strong style={ accentStyle }>{ `${ startingLetter }${ theaterStartingNumber }` }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+									<strong style={ accentStyle }>{ `${ endingLetter }${ theaterEndingNumber }` }</strong>
+								</>
+							) }
+							{ activeMode === 'csv' && (
+								<>
+									{ __( 'Raffling among', 'animated-raffle-winner' ) }{ ' ' }
+									<strong style={ accentStyle }>{ safeCsvItems.length }</strong>{ ' ' }
+									{ safeCsvItems.length === 1
+										? __( 'participant', 'animated-raffle-winner' )
+										: __( 'participants', 'animated-raffle-winner' ) }
+								</>
+							) }
+							{ activeMode === 'numbers' && (
+								<>
+									{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+									<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+									<strong style={ accentStyle }>{ endingNumber }</strong>
+								</>
+							) }
+						</p>
+					) }
 					<button className="raffle-button" style={ buttonStyle } disabled>
 						{ __( 'Draw', 'animated-raffle-winner' ) }
 					</button>
@@ -651,6 +1481,12 @@ export default function Edit( { attributes, setAttributes } ) {
 						<span className="number-preview" style={ accentStyle }>?</span>
 					</div>
 					<div className="raffle-config-info">
+						<p className="raffle-info">
+							{ __( 'Mode:', 'animated-raffle-winner' ) } <strong>{ modeTabs.find( ( tab ) => tab.name === activeMode )?.title }</strong>
+						</p>
+						<p className="raffle-info">
+							{ __( 'No Repeats:', 'animated-raffle-winner' ) } <strong>{ excludePreviousWinners ? __( 'Yes', 'animated-raffle-winner' ) : __( 'No', 'animated-raffle-winner' ) }</strong>
+						</p>
 						<p className="raffle-info">
 							{ __( 'Duration:', 'animated-raffle-winner' ) } <strong>{ raffleDuration }s</strong>
 						</p>
@@ -690,8 +1526,17 @@ import { __ } from '@wordpress/i18n';
  */
 export default function save( { attributes } ) {
 	const {
+		raffleMode = 'numbers',
 		startingNumber,
 		endingNumber,
+		startingLetter = 'A',
+		endingLetter = 'C',
+		theaterStartingNumber = 1,
+		theaterEndingNumber = 10,
+		csvItems = [],
+		excludePreviousWinners = false,
+		customTitle = '',
+		hideSubtitle = false,
 		raffleDuration,
 		fullscreen,
 		animationType,
@@ -803,6 +1648,40 @@ export default function save( { attributes } ) {
 		}
 	}
 
+	const activeMode = [ 'numbers', 'theater', 'csv' ].includes( raffleMode )
+		? raffleMode
+		: 'numbers';
+	const safeStartLetter = /^[A-Z]$/.test( String( startingLetter || '' ).trim().toUpperCase() )
+		? String( startingLetter ).trim().toUpperCase()
+		: 'A';
+	const safeEndLetter = /^[A-Z]$/.test( String( endingLetter || '' ).trim().toUpperCase() )
+		? String( endingLetter ).trim().toUpperCase()
+		: 'C';
+	const safeCsvItems = Array.isArray( csvItems )
+		? csvItems
+			.slice( 0, 5000 )
+			.filter( ( item ) => typeof item === 'string' )
+			.map( ( item ) =>
+				item
+					.replace( /[\u0000-\u001F\u007F-\u009F]/g, '' )
+					.replace( /<[^>]*>/g, '' )
+					.replace( /[<>]/g, '' )
+					.replace( /^[=+@\t\r]+/, '' )
+					.trim()
+					.slice( 0, 120 )
+			)
+			.filter( Boolean )
+		: [];
+
+	const safeCustomTitle = typeof customTitle === 'string'
+		? customTitle
+			.replace( /[\u0000-\u001F\u007F-\u009F]/g, '' )
+			.replace( /<[^>]*>/g, '' )
+			.replace( /[<>]/g, '' )
+			.trim()
+			.slice( 0, 120 )
+		: '';
+
 	const blockProps = useBlockProps.save( {
 		className: 'animated-raffle-winner-block',
 	} );
@@ -810,25 +1689,63 @@ export default function save( { attributes } ) {
 	return (
 		<div { ...blockProps }>
 			<div
-				className={ `raffle-container text-size-${ textSize || 'medium' }` }
+				className={ `raffle-container text-size-${ textSize || 'medium' } mode-${ activeMode }` }
 				style={ backgroundStyle }
+				data-raffle-mode={ activeMode }
 				data-starting-number={ startingNumber }
 				data-ending-number={ endingNumber }
+				data-starting-letter={ safeStartLetter }
+				data-ending-letter={ safeEndLetter }
+				data-theater-starting-number={ theaterStartingNumber }
+				data-theater-ending-number={ theaterEndingNumber }
+				data-csv-items={ activeMode === 'csv' ? JSON.stringify( safeCsvItems ) : undefined }
+				data-exclude-previous-winners={ excludePreviousWinners ? 'true' : 'false' }
 				data-raffle-duration={ raffleDuration }
 				data-fullscreen={ fullscreen }
 				data-animation-type={ animationType }
 			>
-				<p className="raffle-message" style={ textStyle }>
-					{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
-					<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
-					<strong style={ accentStyle }>{ endingNumber }</strong>
-				</p>
+				{ safeCustomTitle && (
+					<h3 className="raffle-title" style={ textStyle }>
+						{ safeCustomTitle }
+					</h3>
+				) }
+				{ ! hideSubtitle && (
+					<p className="raffle-message" style={ textStyle }>
+						{ activeMode === 'theater' && (
+							<>
+								{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ `${ safeStartLetter }${ theaterStartingNumber }` }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ `${ safeEndLetter }${ theaterEndingNumber }` }</strong>
+							</>
+						) }
+						{ activeMode === 'csv' && (
+							<>
+								{ __( 'Raffling among', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ safeCsvItems.length }</strong>{ ' ' }
+								{ safeCsvItems.length === 1
+									? __( 'participant', 'animated-raffle-winner' )
+									: __( 'participants', 'animated-raffle-winner' ) }
+							</>
+						) }
+						{ activeMode === 'numbers' && (
+							<>
+								{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ endingNumber }</strong>
+							</>
+						) }
+					</p>
+				) }
 				<button
 					className="raffle-button"
 					style={ buttonStyle }
 					type="button"
 					data-draw-label={ __( 'Draw', 'animated-raffle-winner' ) }
 					data-draw-again-label={ __( 'Draw again', 'animated-raffle-winner' ) }
+					data-exhausted-label={ __( 'All winners drawn', 'animated-raffle-winner' ) }
+					data-reset-label={ __( 'Reset raffle', 'animated-raffle-winner' ) }
+					data-history-label={ __( 'Previous winners:', 'animated-raffle-winner' ) }
+					data-exit-fullscreen-label={ __( 'Exit fullscreen', 'animated-raffle-winner' ) }
 				>
 					{ __( 'Draw', 'animated-raffle-winner' ) }
 				</button>
@@ -921,6 +1838,37 @@ export default function save( { attributes } ) {
 		.number-result.rolling { font-size: 5.8rem; }
 	}
 
+	.raffle-container.mode-csv {
+		&.text-size-very-small {
+			.number-result { font-size: 2rem; }
+			.number-result.rolling { font-size: 1.6rem; }
+		}
+		&.text-size-small {
+			.number-result { font-size: 2.6rem; }
+			.number-result.rolling { font-size: 2.1rem; }
+		}
+		&.text-size-medium {
+			.number-result { font-size: 3.2rem; }
+			.number-result.rolling { font-size: 2.5rem; }
+		}
+		&.text-size-large {
+			.number-result { font-size: 3.8rem; }
+			.number-result.rolling { font-size: 3rem; }
+		}
+		&.text-size-super-large {
+			.number-result { font-size: 4.4rem; }
+			.number-result.rolling { font-size: 3.4rem; }
+		}
+	}
+
+	.raffle-title {
+		color: #fff;
+		font-size: 2.2rem;
+		font-weight: 700;
+		margin: 0 0 0.75rem;
+		text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+	}
+
 	.raffle-message {
 		color: #fff;
 		font-size: 1.5rem;
@@ -930,6 +1878,78 @@ export default function save( { attributes } ) {
 		strong {
 			font-size: 1.8rem;
 			color: #ffd700;
+		}
+	}
+
+	.raffle-fullscreen-close {
+		display: none;
+		position: absolute;
+		top: 1.25rem;
+		right: 1.25rem;
+		width: 44px;
+		height: 44px;
+		border-radius: 50%;
+		border: 2px solid rgba(255, 255, 255, 0.6);
+		background: rgba(0, 0, 0, 0.35);
+		color: #fff;
+		font-size: 1.75rem;
+		line-height: 1;
+		cursor: pointer;
+		z-index: 10;
+		align-items: center;
+		justify-content: center;
+		transition: background-color 0.2s ease, transform 0.2s ease;
+
+		&:hover {
+			background: rgba(0, 0, 0, 0.6);
+			transform: scale(1.06);
+		}
+
+		&:focus-visible {
+			outline: 3px solid #ffd700;
+			outline-offset: 2px;
+		}
+	}
+
+	.raffle-container.fullscreen-active .raffle-fullscreen-close {
+		display: inline-flex;
+	}
+
+	.raffle-history-wrapper {
+		margin-top: 1.25rem;
+		position: relative;
+		z-index: 2;
+
+		&[hidden] {
+			display: none;
+		}
+	}
+
+	.raffle-history-list {
+		margin: 0 0 0.75rem;
+		color: rgba(255, 255, 255, 0.92);
+		font-size: 1rem;
+		text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.35);
+	}
+
+	.raffle-reset-button {
+		background: rgba(0, 0, 0, 0.28);
+		color: #fff;
+		border: 1px solid rgba(255, 255, 255, 0.5);
+		border-radius: 999px;
+		padding: 0.4rem 1.1rem;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+
+		&:hover {
+			background: rgba(0, 0, 0, 0.45);
+		}
+
+		&:focus-visible {
+			outline: 2px solid #ffd700;
+			outline-offset: 2px;
 		}
 	}
 
@@ -978,6 +1998,10 @@ export default function save( { attributes } ) {
 
 	.number-result {
 		display: inline-block;
+		max-width: 100%;
+		line-height: 1.2;
+		word-break: break-word;
+		overflow-wrap: anywhere;
 		font-size: 6rem;
 		font-weight: bold;
 		color: #ffd700;
@@ -1160,6 +2184,86 @@ export default function save( { attributes } ) {
 		margin-top: 2rem;
 	}
 }
+
+.arw-mode-tabs {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 4px;
+	padding: 4px;
+	margin-bottom: 16px;
+	background: #f0f0f0;
+	border-radius: 6px;
+}
+
+.arw-mode-tab {
+	appearance: none;
+	border: none;
+	background: transparent;
+	border-radius: 4px;
+	padding: 6px 8px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #1e1e1e;
+	cursor: pointer;
+	text-align: center;
+	transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.6);
+	}
+
+	&.is-active {
+		background: #fff;
+		color: var(--wp-admin-theme-color, #007cba);
+		font-weight: 600;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--wp-admin-theme-color, #007cba);
+		outline-offset: 1px;
+	}
+}
+
+.arw-mode-tabpanel {
+	margin-bottom: 8px;
+}
+
+.arw-csv-upload-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.arw-csv-filename,
+.arw-mode-summary {
+	margin: 0 0 12px;
+	font-size: 12px;
+	color: #50575e;
+}
+
+.arw-csv-columns {
+	margin: 0 0 16px;
+	padding: 10px 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+
+	.arw-csv-columns-title {
+		margin: 0 0 8px;
+		font-size: 11px;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: #1e1e1e;
+	}
+
+	.arw-csv-separator-toggle {
+		margin-top: 10px;
+		padding-top: 10px;
+		border-top: 1px solid #dcdcde;
+	}
+}
 ]]></content>
   </file>
   <file path="src/view.js">
@@ -1173,16 +2277,27 @@ class AnimatedRaffleWinner {
 	constructor( container ) {
 		this.container = container;
 		this.button = container.querySelector( '.raffle-button' );
+		this.resultContainer = container.querySelector( '.raffle-result' );
 		this.numberElement = container.querySelector( '.number-result' );
 		this.canvas = container.querySelector( '.celebration-canvas' );
 		this.ctx = this.canvas ? this.canvas.getContext( '2d' ) : null;
 		this.drawLabel = this.button?.getAttribute( 'data-draw-label' ) || 'Draw';
 		this.drawAgainLabel = this.button?.getAttribute( 'data-draw-again-label' ) || 'Draw again';
+		this.exhaustedLabel = this.button?.getAttribute( 'data-exhausted-label' ) || 'All winners drawn';
+		this.resetLabel = this.button?.getAttribute( 'data-reset-label' ) || 'Reset raffle';
+		this.historyLabel = this.button?.getAttribute( 'data-history-label' ) || 'Previous winners:';
+		this.exitFullscreenLabel = this.button?.getAttribute( 'data-exit-fullscreen-label' ) || 'Exit fullscreen';
 
-		// Validated allowed animation types
-		const allowedAnimationTypes = ['fireworks', 'confetti', 'stars', 'balloons'];
-		
-		// Parse and validate numeric attributes
+		// Validated allowed animation types and raffle modes
+		const allowedAnimationTypes = [ 'fireworks', 'confetti', 'stars', 'balloons' ];
+		const allowedRaffleModes = [ 'numbers', 'theater', 'csv' ];
+
+		const raffleModeRaw = container.getAttribute( 'data-raffle-mode' ) || 'numbers';
+		this.raffleMode = allowedRaffleModes.includes( raffleModeRaw )
+			? raffleModeRaw
+			: 'numbers';
+
+		// Parse and validate numeric attributes for Numbers mode
 		const startingNumberRaw = parseInt(
 			container.getAttribute( 'data-starting-number' ) || '1',
 			10
@@ -1195,7 +2310,7 @@ class AnimatedRaffleWinner {
 			container.getAttribute( 'data-raffle-duration' ) || '5',
 			10
 		);
-		
+
 		// Validate and constrain numeric values
 		this.startingNumber = isNaN( startingNumberRaw ) || startingNumberRaw < -999999 || startingNumberRaw > 999999
 			? 1
@@ -1206,25 +2321,83 @@ class AnimatedRaffleWinner {
 		this.raffleDuration = isNaN( raffleDurationRaw ) || raffleDurationRaw < 1 || raffleDurationRaw > 60
 			? 5
 			: raffleDurationRaw;
-		
+
 		// Ensure ending number is greater than starting number
 		if ( this.endingNumber <= this.startingNumber ) {
 			this.endingNumber = this.startingNumber + 1;
 		}
+
+		// Parse and validate Theater mode attributes (Letter + Number)
+		const startLetterRaw = ( container.getAttribute( 'data-starting-letter' ) || 'A' ).trim().toUpperCase();
+		const endLetterRaw = ( container.getAttribute( 'data-ending-letter' ) || 'C' ).trim().toUpperCase();
+		const startCode = /^[A-Z]$/.test( startLetterRaw ) ? startLetterRaw.charCodeAt( 0 ) : 65;
+		const endCode = /^[A-Z]$/.test( endLetterRaw ) ? endLetterRaw.charCodeAt( 0 ) : 67;
+		this.startLetterCode = Math.min( startCode, endCode );
+		this.endLetterCode = Math.max( startCode, endCode );
+
+		const theaterStartNumRaw = parseInt(
+			container.getAttribute( 'data-theater-starting-number' ) || '1',
+			10
+		);
+		const theaterEndNumRaw = parseInt(
+			container.getAttribute( 'data-theater-ending-number' ) || '10',
+			10
+		);
+		const validTheaterStart = isNaN( theaterStartNumRaw ) || theaterStartNumRaw < 1 || theaterStartNumRaw > 9999
+			? 1
+			: theaterStartNumRaw;
+		const validTheaterEnd = isNaN( theaterEndNumRaw ) || theaterEndNumRaw < 1 || theaterEndNumRaw > 9999
+			? 10
+			: theaterEndNumRaw;
+		this.theaterStartingNumber = Math.min( validTheaterStart, validTheaterEnd );
+		this.theaterEndingNumber = Math.max( validTheaterStart, validTheaterEnd );
+
+		// Parse and validate CSV items
+		this.csvItems = [];
+		const csvItemsAttr = container.getAttribute( 'data-csv-items' );
+		if ( csvItemsAttr && csvItemsAttr.length <= 500000 ) {
+			try {
+				const parsed = JSON.parse( csvItemsAttr );
+				if ( Array.isArray( parsed ) ) {
+					this.csvItems = parsed
+						.slice( 0, 5000 )
+						.filter( ( item ) => typeof item === 'string' && item.trim().length > 0 )
+						.map( ( item ) =>
+							item
+								.replace( /[\u0000-\u001F\u007F-\u009F]/g, '' )
+								.replace( /<[^>]*>/g, '' )
+								.replace( /[<>]/g, '' )
+								.replace( /^[=+@\t\r]+/, '' )
+								.trim()
+								.slice( 0, 120 )
+						)
+						.filter( Boolean );
+				}
+			} catch ( _e ) {
+				this.csvItems = [];
+			}
+		}
 		
 		this.fullscreen = container.getAttribute( 'data-fullscreen' ) === 'true';
-		
+		this.excludePreviousWinners = container.getAttribute( 'data-exclude-previous-winners' ) === 'true';
+
 		// Validate animation type against whitelist
 		const animationTypeRaw = container.getAttribute( 'data-animation-type' ) || 'fireworks';
 		this.animationType = allowedAnimationTypes.includes( animationTypeRaw )
 			? animationTypeRaw
 			: 'fireworks';
 
+		this.drawnValues = new Set();
+		this.drawnCsvIndices = new Set();
+		this.drawnHistory = [];
+		this.rollTimeout = null;
 		this.particles = [];
 		this.animationFrame = null;
 		this.celebrationActive = false;
 		this.keydownHandler = null;
 		this.celebrationTimeout = null;
+		this.fullscreenCloseBtn = null;
+		this.historyContainer = null;
 		this.reduceMotion = window.matchMedia &&
 			window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 
@@ -1233,13 +2406,266 @@ class AnimatedRaffleWinner {
 
 	init() {
 		if ( this.button ) {
+			if ( this.raffleMode === 'csv' && this.csvItems.length === 0 ) {
+				this.button.disabled = true;
+			}
 			this.button.addEventListener( 'click', () => this.startRaffle() );
+		}
+
+		if ( this.fullscreen ) {
+			this.ensureFullscreenCloseButton();
+		}
+
+		if ( this.excludePreviousWinners ) {
+			this.ensureHistoryUI();
 		}
 
 		if ( this.canvas ) {
 			this.resizeCanvas();
 			window.addEventListener( 'resize', () => this.resizeCanvas() );
 		}
+	}
+
+	/**
+	 * Cryptographically unbiased random integer in [min, max] inclusive.
+	 *
+	 * @param {number} min Minimum integer.
+	 * @param {number} max Maximum integer.
+	 * @return {number} Random integer in [min, max].
+	 */
+	getRandomInt( min, max ) {
+		const range = max - min + 1;
+		if ( range <= 1 ) {
+			return min;
+		}
+
+		if ( window.crypto && typeof window.crypto.getRandomValues === 'function' ) {
+			const maxUint32 = 0xFFFFFFFF;
+			const limit = maxUint32 - ( ( maxUint32 + 1 ) % range );
+			const buffer = new Uint32Array( 1 );
+			let randomUint;
+			do {
+				window.crypto.getRandomValues( buffer );
+				randomUint = buffer[ 0 ];
+			} while ( randomUint > limit );
+			return min + ( randomUint % range );
+		}
+
+		return Math.floor( Math.random() * range ) + min;
+	}
+
+	getTotalPoolSize() {
+		if ( this.raffleMode === 'theater' ) {
+			const letters = this.endLetterCode - this.startLetterCode + 1;
+			const nums = this.theaterEndingNumber - this.theaterStartingNumber + 1;
+			return letters * nums;
+		}
+		if ( this.raffleMode === 'csv' ) {
+			return this.csvItems.length;
+		}
+		return this.endingNumber - this.startingNumber + 1;
+	}
+
+	isPoolExhausted() {
+		if ( ! this.excludePreviousWinners ) {
+			return false;
+		}
+		const total = this.getTotalPoolSize();
+		if ( this.raffleMode === 'csv' ) {
+			return this.drawnCsvIndices.size >= total;
+		}
+		return this.drawnValues.size >= total;
+	}
+
+	/**
+	 * Pick a random value from the configured pool.
+	 *
+	 * @param {boolean} recordWinner Whether this is the final winner draw.
+	 * @return {string} Randomly selected value.
+	 */
+	getRandomValue( recordWinner = false ) {
+		if ( this.raffleMode === 'csv' ) {
+			if ( this.csvItems.length === 0 ) {
+				return '';
+			}
+
+			if ( this.excludePreviousWinners ) {
+				const availableIndices = [];
+				for ( let i = 0; i < this.csvItems.length; i++ ) {
+					if ( ! this.drawnCsvIndices.has( i ) ) {
+						availableIndices.push( i );
+					}
+				}
+				if ( availableIndices.length === 0 ) {
+					return '';
+				}
+				const chosenIdx = availableIndices[ this.getRandomInt( 0, availableIndices.length - 1 ) ];
+				if ( recordWinner ) {
+					this.drawnCsvIndices.add( chosenIdx );
+					this.drawnHistory.push( this.csvItems[ chosenIdx ] );
+				}
+				return this.csvItems[ chosenIdx ];
+			}
+
+			const randomIndex = this.getRandomInt( 0, this.csvItems.length - 1 );
+			return this.csvItems[ randomIndex ];
+		}
+
+		if ( this.raffleMode === 'theater' ) {
+			const totalPool = this.getTotalPoolSize();
+			if ( this.excludePreviousWinners && totalPool <= 10000 ) {
+				const availableSeats = [];
+				for ( let c = this.startLetterCode; c <= this.endLetterCode; c++ ) {
+					const letter = String.fromCharCode( c );
+					for ( let n = this.theaterStartingNumber; n <= this.theaterEndingNumber; n++ ) {
+						const seat = `${ letter }${ n }`;
+						if ( ! this.drawnValues.has( seat ) ) {
+							availableSeats.push( seat );
+						}
+					}
+				}
+				if ( availableSeats.length === 0 ) {
+					return '';
+				}
+				const chosenSeat = availableSeats[ this.getRandomInt( 0, availableSeats.length - 1 ) ];
+				if ( recordWinner ) {
+					this.drawnValues.add( chosenSeat );
+					this.drawnHistory.push( chosenSeat );
+				}
+				return chosenSeat;
+			}
+
+			const randomLetterCode = this.getRandomInt( this.startLetterCode, this.endLetterCode );
+			const randomNum = this.getRandomInt( this.theaterStartingNumber, this.theaterEndingNumber );
+			const seat = `${ String.fromCharCode( randomLetterCode ) }${ randomNum }`;
+			if ( recordWinner && this.excludePreviousWinners ) {
+				this.drawnValues.add( seat );
+				this.drawnHistory.push( seat );
+			}
+			return seat;
+		}
+
+		// Numbers mode
+		const totalPool = this.getTotalPoolSize();
+		if ( this.excludePreviousWinners ) {
+			if ( totalPool <= 10000 ) {
+				const availableNums = [];
+				for ( let n = this.startingNumber; n <= this.endingNumber; n++ ) {
+					const val = String( n );
+					if ( ! this.drawnValues.has( val ) ) {
+						availableNums.push( val );
+					}
+				}
+				if ( availableNums.length === 0 ) {
+					return '';
+				}
+				const chosenVal = availableNums[ this.getRandomInt( 0, availableNums.length - 1 ) ];
+				if ( recordWinner ) {
+					this.drawnValues.add( chosenVal );
+					this.drawnHistory.push( chosenVal );
+				}
+				return chosenVal;
+			}
+
+			let candidate;
+			let attempts = 0;
+			do {
+				candidate = String( this.getRandomInt( this.startingNumber, this.endingNumber ) );
+				attempts++;
+			} while ( this.drawnValues.has( candidate ) && attempts < 500 );
+
+			if ( recordWinner ) {
+				this.drawnValues.add( candidate );
+				this.drawnHistory.push( candidate );
+			}
+			return candidate;
+		}
+
+		return String( this.getRandomInt( this.startingNumber, this.endingNumber ) );
+	}
+
+	ensureFullscreenCloseButton() {
+		if ( this.fullscreenCloseBtn ) {
+			return;
+		}
+		const btn = document.createElement( 'button' );
+		btn.type = 'button';
+		btn.className = 'raffle-fullscreen-close';
+		btn.setAttribute( 'aria-label', this.exitFullscreenLabel );
+		btn.textContent = '×';
+		btn.addEventListener( 'click', () => this.exitFullscreen() );
+		this.container.appendChild( btn );
+		this.fullscreenCloseBtn = btn;
+	}
+
+	exitFullscreen() {
+		this.stopCelebration();
+		if ( this.container.classList.contains( 'fullscreen-active' ) ) {
+			this.container.classList.remove( 'fullscreen-active' );
+			this.resizeCanvas();
+		}
+		if ( this.keydownHandler ) {
+			document.removeEventListener( 'keydown', this.keydownHandler );
+			this.keydownHandler = null;
+		}
+	}
+
+	ensureHistoryUI() {
+		if ( this.historyContainer ) {
+			return;
+		}
+		const wrapper = document.createElement( 'div' );
+		wrapper.className = 'raffle-history-wrapper';
+		wrapper.hidden = true;
+
+		const listParagraph = document.createElement( 'p' );
+		listParagraph.className = 'raffle-history-list';
+
+		const resetBtn = document.createElement( 'button' );
+		resetBtn.type = 'button';
+		resetBtn.className = 'raffle-reset-button';
+		resetBtn.textContent = this.resetLabel;
+		resetBtn.addEventListener( 'click', () => this.resetPool() );
+
+		wrapper.appendChild( listParagraph );
+		wrapper.appendChild( resetBtn );
+
+		if ( this.resultContainer && this.resultContainer.parentNode ) {
+			this.resultContainer.parentNode.insertBefore( wrapper, this.resultContainer.nextSibling );
+		} else {
+			this.container.appendChild( wrapper );
+		}
+		this.historyContainer = wrapper;
+		this.historyListElement = listParagraph;
+	}
+
+	updateHistoryUI() {
+		if ( ! this.excludePreviousWinners || ! this.historyContainer || ! this.historyListElement ) {
+			return;
+		}
+		if ( this.drawnHistory.length === 0 ) {
+			this.historyContainer.hidden = true;
+			this.historyListElement.textContent = '';
+			return;
+		}
+		this.historyContainer.hidden = false;
+		this.historyListElement.textContent = `${ this.historyLabel } ${ this.drawnHistory.join( ', ' ) }`;
+	}
+
+	resetPool() {
+		this.drawnValues.clear();
+		this.drawnCsvIndices.clear();
+		this.drawnHistory = [];
+		this.stopCelebration();
+		if ( this.numberElement ) {
+			this.numberElement.textContent = '';
+			this.numberElement.classList.remove( 'revealed', 'rolling' );
+		}
+		if ( this.button ) {
+			this.button.disabled = this.raffleMode === 'csv' && this.csvItems.length === 0;
+			this.button.textContent = this.drawLabel;
+		}
+		this.updateHistoryUI();
 	}
 
 	resizeCanvas() {
@@ -1255,53 +2681,85 @@ class AnimatedRaffleWinner {
 			return;
 		}
 
-		// Stop previous celebration if active
+		if ( this.raffleMode === 'csv' && this.csvItems.length === 0 ) {
+			return;
+		}
+
+		if ( this.isPoolExhausted() ) {
+			return;
+		}
+
+		// Stop previous celebration or pending roll if active
 		this.stopCelebration();
+		if ( this.rollTimeout ) {
+			clearTimeout( this.rollTimeout );
+			this.rollTimeout = null;
+		}
 
 		if ( this.fullscreen ) {
 			this.container.classList.add( 'fullscreen-active' );
 			this.resizeCanvas();
+			this.addKeyListener();
 		}
 
 		this.button.disabled = true;
 		this.button.classList.add( 'drawing' );
 		this.numberElement.classList.remove( 'revealed' );
 		this.numberElement.classList.add( 'rolling' );
+		if ( this.resultContainer ) {
+			this.resultContainer.setAttribute( 'aria-live', 'off' );
+		}
 
 		const duration = this.raffleDuration * 1000;
-		const interval = 100;
-		const iterations = duration / interval;
-		let counter = 0;
+		const startTime = window.performance?.now ? window.performance.now() : Date.now();
 
-		const animation = setInterval( () => {
-			const randomNumber =
-				Math.floor(
-					Math.random() * ( this.endingNumber - this.startingNumber + 1 )
-				) + this.startingNumber;
-			this.numberElement.textContent = randomNumber;
+		const stepRoll = () => {
+			const now = window.performance?.now ? window.performance.now() : Date.now();
+			const elapsed = now - startTime;
 
-			counter++;
-			if ( counter >= iterations ) {
-				clearInterval( animation );
+			if ( elapsed >= duration ) {
+				this.rollTimeout = null;
 				this.revealResult();
+				return;
 			}
-		}, interval );
+
+			this.numberElement.textContent = this.getRandomValue( false );
+
+			// Decelerate smoothly during the final 35% of the animation
+			const progress = elapsed / duration;
+			let nextDelay = 70;
+			if ( progress > 0.65 ) {
+				const slowProgress = ( progress - 0.65 ) / 0.35;
+				nextDelay = Math.round( 70 + Math.pow( slowProgress, 2 ) * 250 );
+			}
+
+			this.rollTimeout = setTimeout( stepRoll, nextDelay );
+		};
+
+		stepRoll();
 	}
 
 	revealResult() {
-		const finalNumber =
-			Math.floor(
-				Math.random() * ( this.endingNumber - this.startingNumber + 1 )
-			) + this.startingNumber;
+		const finalWinner = this.getRandomValue( true );
 
-		this.numberElement.textContent = finalNumber;
+		if ( this.resultContainer ) {
+			this.resultContainer.setAttribute( 'aria-live', 'polite' );
+		}
+		this.numberElement.textContent = finalWinner;
 		this.numberElement.classList.remove( 'rolling' );
 		this.numberElement.classList.add( 'revealed' );
 
+		this.updateHistoryUI();
+
 		if ( this.button ) {
-			this.button.disabled = false;
 			this.button.classList.remove( 'drawing' );
-			this.button.textContent = this.drawAgainLabel;
+			if ( this.isPoolExhausted() ) {
+				this.button.disabled = true;
+				this.button.textContent = this.exhaustedLabel;
+			} else {
+				this.button.disabled = false;
+				this.button.textContent = this.drawAgainLabel;
+			}
 		}
 
 		this.startCelebration();
@@ -1316,15 +2774,9 @@ class AnimatedRaffleWinner {
 
 		// Create new listener
 		this.keydownHandler = ( e ) => {
-			if ( this.celebrationActive && e.key === 'Escape' ) {
+			if ( e.key === 'Escape' && ( this.celebrationActive || this.container.classList.contains( 'fullscreen-active' ) ) ) {
 				e.preventDefault();
-				this.stopCelebration();
-				if ( this.fullscreen && this.container.classList.contains( 'fullscreen-active' ) ) {
-					this.container.classList.remove( 'fullscreen-active' );
-					this.resizeCanvas();
-				}
-				document.removeEventListener( 'keydown', this.keydownHandler );
-				this.keydownHandler = null;
+				this.exitFullscreen();
 			}
 		};
 

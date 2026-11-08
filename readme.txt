@@ -4,24 +4,27 @@
 Contributors:      RafaelFunchal
 Tags:              block, raffle, random, lottery, animation
 Tested up to:      7.1.4
-Stable tag:        1.0
+Stable tag:        1.1
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
 
-An interactive block to create animated raffles with random numbers and celebratory fireworks.
+An interactive block to create animated raffles with random numbers, theater seats, or CSV participant lists and celebratory animations.
 
 == Description ==
 
-The Animated Raffle Winner block allows you to create engaging raffle experiences on your WordPress site. With smooth animations and exciting visual effects, this block is perfect for promotions, events, contests, and any situation that requires random number selection.
+The Animated Raffle Winner block allows you to create engaging raffle experiences on your WordPress site. With smooth animations and exciting visual effects, this block is perfect for promotions, events, contests, and any situation that requires random number, seat, or participant selection.
 
 **Key Features:**
 
-* Set a custom number range (start and end)
-* Number rolling animation for 5 seconds before revealing the result
-* Highlighted display of the drawn number
-* Animated fireworks to celebrate the result
-* Simple and intuitive interface
-* Fully responsive
+* Three raffle modes in a tabbed sidebar: **Numbers** (custom numeric range), **Theater** (row/section letter + number, e.g. `A1` to `C10`), and **CSV** (upload or paste a participant list)
+* CSV column selector (pick one or multiple columns to display, with optional header row skipping and hyphen/space separator toggle)
+* Option to **exclude previous winners** (no repeats) with a live history of drawn winners and a reset button
+* Custom title heading and option to hide the default range/participant subtitle
+* Cryptographically unbiased random selection (`window.crypto.getRandomValues`)
+* Decelerating "slot machine" rolling animation (1 to 15 seconds) before revealing the winner
+* Celebratory animations: Fireworks, Confetti, Stars, and Balloons
+* Fullscreen mode with keyboard (`Escape`) and on-screen close (`×`) button
+* Simple, accessible, and fully responsive interface
 
 **How to Use:**
 
@@ -60,11 +63,15 @@ Yes, the block is fully responsive and works perfectly on smartphones and tablet
 
 = Can I customize the animation duration? =
 
-Currently, the animation has a fixed duration of 5 seconds to provide a consistent and exciting experience.
+Yes! You can set the raffle animation duration between 1 and 15 seconds in the Raffle Settings panel.
+
+= Can I draw theater seats (letters and numbers) or participant names from a CSV? =
+
+Yes! In the Raffle Settings sidebar panel, switch between the **Numbers**, **Theater** (e.g. `A1` to `C10`), and **CSV** tabs. In CSV mode, you can upload a `.csv` file or paste rows, skip the header row, and choose which column(s) to display on the frontend.
 
 = Is the raffle truly random? =
 
-Yes, we use JavaScript's Math.random() function, which generates pseudo-random numbers suitable for most raffle applications.
+Yes, the block uses the browser's Web Crypto API (`window.crypto.getRandomValues()`) with rejection sampling for unbiased random selection (with automatic fallback to `Math.random()`).
 
 == Screenshots ==
 
@@ -74,6 +81,17 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 4. Raffle result with large number and fireworks
 
 == Changelog ==
+
+= 1.1 =
+* Added tabbed Raffle Settings with three modes: Numbers, Theater (Letter + Number, e.g., A1 to C10), and CSV participant lists
+* Added CSV column selector to choose which column(s) to display on the frontend, with a toggle for hyphen or space separation
+* Added "Exclude previous winners (no repeats)" option with drawn winner history and reset button
+* Added optional Custom Title and toggle to hide the default range/participant subtitle
+* Upgraded random winner selection to use `window.crypto.getRandomValues()` with unbiased rejection sampling
+* Added decelerating slot-machine roll effect before revealing the winner
+* Added an on-screen close (`×`) button in fullscreen mode for mobile and touch devices
+* Added `load_plugin_textdomain` and `wp_set_script_translations` support
+* Tested up to WordPress 7.1.4
 
 = 1.0 =
 * Added background image selector from Media Library
@@ -91,6 +109,9 @@ Yes, we use JavaScript's Math.random() function, which generates pseudo-random n
 * Responsive interface
 
 == Upgrade Notice ==
+
+= 1.1 =
+Adds Theater (Letter + Number) and CSV participant raffle modes, multi-column CSV selection, no-repeat draws, custom titles, and decelerating roll animations!
 
 = 1.0 =
 Major update with background color and gradient customization support. Upgrade to customize your raffle block backgrounds!
