@@ -22,8 +22,9 @@ The Animated Raffle Winner block allows you to create engaging raffle experience
 * Custom title heading and option to hide the default range/participant subtitle
 * Cryptographically unbiased random selection (`window.crypto.getRandomValues`)
 * Decelerating "slot machine" rolling animation (1 to 15 seconds) before revealing the winner
-* Celebratory animations: Fireworks, Confetti, Stars, and Balloons
-* Fullscreen mode with keyboard (`Escape`) and on-screen close (`×`) button
+* 10 Celebration animation options (Fireworks, Confetti, Party Cannons, Gold Coins, Stars, Sparkles, 3D Balloons, Floating Hearts, Spiral Streamers, or None) with configurable celebration duration (1 to 30 seconds)
+* Fullscreen mode with keyboard (`Escape`) and on-screen close (`×`) button with tooltip
+* Theme font inheritance and per-block Typography Font Family selector
 * Simple, accessible, and fully responsive interface
 
 **How to Use:**
@@ -87,6 +88,9 @@ Yes, the block uses the browser's Web Crypto API (`window.crypto.getRandomValues
 * Added CSV column selector to choose which column(s) to display on the frontend, with a toggle for hyphen or space separation
 * Added "Exclude previous winners (no repeats)" option with drawn winner history and reset button
 * Added optional Custom Title and toggle to hide the default range/participant subtitle
+* Added 6 new celebration animation types (Party Cannons, Gold Coins, Sparkles, Floating Hearts, Spiral Streamers, and None), upgraded 3D Balloons animation, and added a Celebration Duration setting
+* Added graceful particle exit when the celebration timer ends
+* Added theme font-family inheritance across all elements and per-block Typography Font Family support
 * Upgraded random winner selection to use `window.crypto.getRandomValues()` with unbiased rejection sampling
 * Added decelerating slot-machine roll effect before revealing the winner
 * Added an on-screen close (`×`) button in fullscreen mode for mobile and touch devices
