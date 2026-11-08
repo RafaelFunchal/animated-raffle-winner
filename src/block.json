@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "rafaelfunchal/animated-raffle-winner",
-	"version": "1.0",
+	"version": "1.1",
 	"title": "Animated Raffle Winner",
 	"category": "widgets",
 	"icon": "randomize",
@@ -17,6 +17,10 @@
 		}
 	},
 	"attributes": {
+		"raffleMode": {
+			"type": "string",
+			"default": "numbers"
+		},
 		"startingNumber": {
 			"type": "number",
 			"default": 1
@@ -24,6 +28,58 @@
 		"endingNumber": {
 			"type": "number",
 			"default": 100
+		},
+		"startingLetter": {
+			"type": "string",
+			"default": "A"
+		},
+		"endingLetter": {
+			"type": "string",
+			"default": "C"
+		},
+		"theaterStartingNumber": {
+			"type": "number",
+			"default": 1
+		},
+		"theaterEndingNumber": {
+			"type": "number",
+			"default": 10
+		},
+		"csvFileName": {
+			"type": "string",
+			"default": ""
+		},
+		"csvRawContent": {
+			"type": "string",
+			"default": ""
+		},
+		"csvSkipHeader": {
+			"type": "boolean",
+			"default": false
+		},
+		"csvSelectedColumns": {
+			"type": "array",
+			"default": [ 0 ]
+		},
+		"csvUseSeparator": {
+			"type": "boolean",
+			"default": false
+		},
+		"csvItems": {
+			"type": "array",
+			"default": []
+		},
+		"excludePreviousWinners": {
+			"type": "boolean",
+			"default": false
+		},
+		"customTitle": {
+			"type": "string",
+			"default": ""
+		},
+		"hideSubtitle": {
+			"type": "boolean",
+			"default": false
 		},
 		"raffleDuration": {
 			"type": "number",

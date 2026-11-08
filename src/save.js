@@ -18,8 +18,17 @@ import { __ } from '@wordpress/i18n';
  */
 export default function save( { attributes } ) {
 	const {
+		raffleMode = 'numbers',
 		startingNumber,
 		endingNumber,
+		startingLetter = 'A',
+		endingLetter = 'C',
+		theaterStartingNumber = 1,
+		theaterEndingNumber = 10,
+		csvItems = [],
+		excludePreviousWinners = false,
+		customTitle = '',
+		hideSubtitle = false,
 		raffleDuration,
 		fullscreen,
 		animationType,
@@ -131,6 +140,40 @@ export default function save( { attributes } ) {
 		}
 	}
 
+	const activeMode = [ 'numbers', 'theater', 'csv' ].includes( raffleMode )
+		? raffleMode
+		: 'numbers';
+	const safeStartLetter = /^[A-Z]$/.test( String( startingLetter || '' ).trim().toUpperCase() )
+		? String( startingLetter ).trim().toUpperCase()
+		: 'A';
+	const safeEndLetter = /^[A-Z]$/.test( String( endingLetter || '' ).trim().toUpperCase() )
+		? String( endingLetter ).trim().toUpperCase()
+		: 'C';
+	const safeCsvItems = Array.isArray( csvItems )
+		? csvItems
+			.slice( 0, 5000 )
+			.filter( ( item ) => typeof item === 'string' )
+			.map( ( item ) =>
+				item
+					.replace( /[\u0000-\u001F\u007F-\u009F]/g, '' )
+					.replace( /<[^>]*>/g, '' )
+					.replace( /[<>]/g, '' )
+					.replace( /^[=+@\t\r]+/, '' )
+					.trim()
+					.slice( 0, 120 )
+			)
+			.filter( Boolean )
+		: [];
+
+	const safeCustomTitle = typeof customTitle === 'string'
+		? customTitle
+			.replace( /[\u0000-\u001F\u007F-\u009F]/g, '' )
+			.replace( /<[^>]*>/g, '' )
+			.replace( /[<>]/g, '' )
+			.trim()
+			.slice( 0, 120 )
+		: '';
+
 	const blockProps = useBlockProps.save( {
 		className: 'animated-raffle-winner-block',
 	} );
@@ -138,25 +181,63 @@ export default function save( { attributes } ) {
 	return (
 		<div { ...blockProps }>
 			<div
-				className={ `raffle-container text-size-${ textSize || 'medium' }` }
+				className={ `raffle-container text-size-${ textSize || 'medium' } mode-${ activeMode }` }
 				style={ backgroundStyle }
+				data-raffle-mode={ activeMode }
 				data-starting-number={ startingNumber }
 				data-ending-number={ endingNumber }
+				data-starting-letter={ safeStartLetter }
+				data-ending-letter={ safeEndLetter }
+				data-theater-starting-number={ theaterStartingNumber }
+				data-theater-ending-number={ theaterEndingNumber }
+				data-csv-items={ activeMode === 'csv' ? JSON.stringify( safeCsvItems ) : undefined }
+				data-exclude-previous-winners={ excludePreviousWinners ? 'true' : 'false' }
 				data-raffle-duration={ raffleDuration }
 				data-fullscreen={ fullscreen }
 				data-animation-type={ animationType }
 			>
-				<p className="raffle-message" style={ textStyle }>
-					{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
-					<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
-					<strong style={ accentStyle }>{ endingNumber }</strong>
-				</p>
+				{ safeCustomTitle && (
+					<h3 className="raffle-title" style={ textStyle }>
+						{ safeCustomTitle }
+					</h3>
+				) }
+				{ ! hideSubtitle && (
+					<p className="raffle-message" style={ textStyle }>
+						{ activeMode === 'theater' && (
+							<>
+								{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ `${ safeStartLetter }${ theaterStartingNumber }` }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ `${ safeEndLetter }${ theaterEndingNumber }` }</strong>
+							</>
+						) }
+						{ activeMode === 'csv' && (
+							<>
+								{ __( 'Raffling among', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ safeCsvItems.length }</strong>{ ' ' }
+								{ safeCsvItems.length === 1
+									? __( 'participant', 'animated-raffle-winner' )
+									: __( 'participants', 'animated-raffle-winner' ) }
+							</>
+						) }
+						{ activeMode === 'numbers' && (
+							<>
+								{ __( 'Raffling between', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ startingNumber }</strong> { __( 'and', 'animated-raffle-winner' ) }{ ' ' }
+								<strong style={ accentStyle }>{ endingNumber }</strong>
+							</>
+						) }
+					</p>
+				) }
 				<button
 					className="raffle-button"
 					style={ buttonStyle }
 					type="button"
 					data-draw-label={ __( 'Draw', 'animated-raffle-winner' ) }
 					data-draw-again-label={ __( 'Draw again', 'animated-raffle-winner' ) }
+					data-exhausted-label={ __( 'All winners drawn', 'animated-raffle-winner' ) }
+					data-reset-label={ __( 'Reset raffle', 'animated-raffle-winner' ) }
+					data-history-label={ __( 'Previous winners:', 'animated-raffle-winner' ) }
+					data-exit-fullscreen-label={ __( 'Exit fullscreen', 'animated-raffle-winner' ) }
 				>
 					{ __( 'Draw', 'animated-raffle-winner' ) }
 				</button>

@@ -16,3 +16,83 @@
 		margin-top: 2rem;
 	}
 }
+
+.arw-mode-tabs {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 4px;
+	padding: 4px;
+	margin-bottom: 16px;
+	background: #f0f0f0;
+	border-radius: 6px;
+}
+
+.arw-mode-tab {
+	appearance: none;
+	border: none;
+	background: transparent;
+	border-radius: 4px;
+	padding: 6px 8px;
+	font-size: 12px;
+	font-weight: 500;
+	color: #1e1e1e;
+	cursor: pointer;
+	text-align: center;
+	transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+	&:hover {
+		background: rgba(255, 255, 255, 0.6);
+	}
+
+	&.is-active {
+		background: #fff;
+		color: var(--wp-admin-theme-color, #007cba);
+		font-weight: 600;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--wp-admin-theme-color, #007cba);
+		outline-offset: 1px;
+	}
+}
+
+.arw-mode-tabpanel {
+	margin-bottom: 8px;
+}
+
+.arw-csv-upload-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.arw-csv-filename,
+.arw-mode-summary {
+	margin: 0 0 12px;
+	font-size: 12px;
+	color: #50575e;
+}
+
+.arw-csv-columns {
+	margin: 0 0 16px;
+	padding: 10px 12px;
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 6px;
+
+	.arw-csv-columns-title {
+		margin: 0 0 8px;
+		font-size: 11px;
+		font-weight: 600;
+		text-transform: uppercase;
+		color: #1e1e1e;
+	}
+
+	.arw-csv-separator-toggle {
+		margin-top: 10px;
+		padding-top: 10px;
+		border-top: 1px solid #dcdcde;
+	}
+}
