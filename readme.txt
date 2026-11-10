@@ -3,7 +3,7 @@
 
 Contributors:      RafaelFunchal
 Tags:              block, raffle, random, lottery, animation
-Tested up to:      7.1.4
+Tested up to:      7.2
 Stable tag:        1.1
 License:           GPLv2 or later
 License URI:       https://www.gnu.org/licenses/gpl-2.0.html
